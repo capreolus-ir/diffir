@@ -60,15 +60,16 @@ def main():
     args = parser.parse_args()
     diff(args.runfiles, args.config, cli=args.cli, web=args.web)
 
+
 def diff(runs, config, cli, web, print_html=True):
     config = config_list_to_dict(config) if config else {}
 
     # hack to automatically add weight files when available and not already specified
     config_with_defaults = MainTask(config, build=False).config
     for i, run in enumerate(runs):
-        if f'weights_{i+1}' in config_with_defaults['weight'] and config_with_defaults['weight'][f'weights_{i+1}'] is None:
+        if f"weights_{i+1}" in config_with_defaults["weight"] and config_with_defaults["weight"][f"weights_{i+1}"] is None:
             if os.path.exists(run + ".diffir"):
-                config.setdefault("weight", {})[f'weights_{i+1}'] = run + ".diffir"
+                config.setdefault("weight", {})[f"weights_{i+1}"] = run + ".diffir"
 
     task = MainTask(config)
     if cli:
@@ -78,6 +79,7 @@ def diff(runs, config, cli, web, print_html=True):
         if print_html:
             print(html)
         return task.config, html
+
 
 class MainTask(ModuleBase):
     module_type = "task"
@@ -129,7 +131,11 @@ class MainTask(ModuleBase):
                 continue
 
             RESULT_COUNT = 10
-            doc_ids = set(list(run_1[query.query_id])[:RESULT_COUNT] + list(run_2[query.query_id])[:RESULT_COUNT]) if run_2 else list(run_1[query.query_id])[:RESULT_COUNT]
+            doc_ids = (
+                set(list(run_1[query.query_id])[:RESULT_COUNT] + list(run_2[query.query_id])[:RESULT_COUNT])
+                if run_2
+                else list(run_1[query.query_id])[:RESULT_COUNT]
+            )
 
             fields = query._asdict()
             qrels_for_query = qrels.get(query.query_id, {})
@@ -139,14 +145,16 @@ class MainTask(ModuleBase):
                     continue
                 doc = docstore.get(doc_id)
                 weights = self.weight.score_document_regions(query, doc, 0)
-                run_1_for_query.append({
-                    "doc_id": doc_id,
-                    "score": score,
-                    "relevance": qrels_for_query.get(doc_id),
-                    "rank": rank + 1,
-                    "weights": weights,
-                    "snippet": self.find_snippet(weights, doc),
-                })
+                run_1_for_query.append(
+                    {
+                        "doc_id": doc_id,
+                        "score": score,
+                        "relevance": qrels_for_query.get(doc_id),
+                        "rank": rank + 1,
+                        "weights": weights,
+                        "snippet": self.find_snippet(weights, doc),
+                    }
+                )
 
             run_2_for_query = []
 
@@ -156,20 +164,22 @@ class MainTask(ModuleBase):
                         continue
                     doc = docstore.get(doc_id)
                     weights = self.weight.score_document_regions(query, doc, 1)
-                    run_2_for_query.append({
-                        "doc_id": doc_id,
-                        "score": score,
-                        "relevance": qrels_for_query.get(doc_id),
-                        "rank": rank + 1,
-                        "weights": weights,
-                        "snippet": self.find_snippet(weights, doc),
-                    })
+                    run_2_for_query.append(
+                        {
+                            "doc_id": doc_id,
+                            "score": score,
+                            "relevance": qrels_for_query.get(doc_id),
+                            "rank": rank + 1,
+                            "weights": weights,
+                            "snippet": self.find_snippet(weights, doc),
+                        }
+                    )
 
             qid2object[query.query_id] = {
                 "fields": fields,
                 "run_1": run_1_for_query,
                 "run_2": run_2_for_query,
-                "mergedWeights": self.merge_weights(run_1_for_query, run_2_for_query)
+                "mergedWeights": self.merge_weights(run_1_for_query, run_2_for_query),
             }
 
         return [qid2object[id] for id in qids]
@@ -208,7 +218,7 @@ class MainTask(ModuleBase):
                     t.add(Interval(segment[0], segment[1], {"run2": segment[2]}))
                 t.split_overlaps()
                 t.merge_equals(lambda old_dict, new_dict: old_dict.update(new_dict) or old_dict, {"run1": None, "run2": None})
-                merged_intervals = sorted([(i.begin, i.end, i.data) for i in t], key=lambda x:(x[0], x[1]))
+                merged_intervals = sorted([(i.begin, i.end, i.data) for i in t], key=lambda x: (x[0], x[1]))
                 merged_weights[doc_id][field] = merged_intervals
 
         return merged_weights
@@ -227,13 +237,14 @@ class MainTask(ModuleBase):
         for field, field_weights in weights.items():
             segments = sorted(field_weights)
             from collections import deque
+
             seg_queues = deque()
             queue_weights = 0
             sidx, eidx = 0, 0
             for seg in segments:
                 eidx += 1
                 seg_queues.append(seg)
-                queue_weights = queue_weights+seg[2]
+                queue_weights = queue_weights + seg[2]
                 while len(seg_queues) > 1 and (seg_queues[-1][0] - MAX_SNIPPET_LEN > seg_queues[0][1]):
                     queue_weights = queue_weights - seg_queues[0][2]
                     seg_queues.popleft()
@@ -245,16 +256,16 @@ class MainTask(ModuleBase):
                     top_field = field
         # reconstruct the snippet
         if top_snippet_score > 0:
-            snp_weights = sorted(weights[top_field])[top_range[0]:top_range[1]]
+            snp_weights = sorted(weights[top_field])[top_range[0] : top_range[1]]
             # start = max(snp_weights[0][1] - max(0, (MAX_SNIPPET_LEN - snp_weights[-1][0] + snp_weights[0][1])/2), 0)
             start = max(snp_weights[0][0] - 5, 0)
             stop = start + MAX_SNIPPET_LEN
-            snp_weights = [(w[0]-start, w[1]-start, w[2]) for w in snp_weights if w[0] < stop]
+            snp_weights = [(w[0] - start, w[1] - start, w[2]) for w in snp_weights if w[0] < stop]
             snp_weights = sorted(snp_weights)
-            top_snippet = {'field': top_field, "start": start, "stop": stop, "weights": snp_weights}
+            top_snippet = {"field": top_field, "start": start, "stop": stop, "weights": snp_weights}
         else:
             # fall back onto the first text
-            top_snippet = {'field': doc._fields[1], 'start': 0, 'stop': MAX_SNIPPET_LEN, 'weights': []}
+            top_snippet = {"field": doc._fields[1], "start": 0, "stop": MAX_SNIPPET_LEN, "weights": []}
         return top_snippet
 
     def create_doc_objects(self, query_objects, dataset):
@@ -279,8 +290,9 @@ class MainTask(ModuleBase):
             for listed_doc in run_1 + run_2:
                 doc_ids_to_fetch.add(listed_doc["doc_id"])
 
-        for doc in _logger.pbar(dataset.docs_store().get_many_iter(doc_ids_to_fetch), desc="Docs iter",
-                                total=len(doc_ids_to_fetch)):
+        for doc in _logger.pbar(
+            dataset.docs_store().get_many_iter(doc_ids_to_fetch), desc="Docs iter", total=len(doc_ids_to_fetch)
+        ):
             doc_objects[doc.doc_id] = doc._asdict()
 
         return doc_objects
@@ -305,21 +317,23 @@ class MainTask(ModuleBase):
         diff_query_objects = self.create_query_objects(run_1, run_2, diff_queries, dataset)
         doc_objects = self.create_doc_objects(diff_query_objects, dataset)
 
-        return json.dumps({
-            "meta": {
-                "run1_name": run_1_fn,
-                "run2_name": run_2_fn,
-                "dataset": self.config["dataset"],
-                "measure": self.measure.module_name,
-                "weight": self.weight.module_name,
-                'qrelDefs': dataset.qrels_defs(),
-                'queryFields': dataset.queries_cls()._fields,
-                'docFields': dataset.docs_cls()._fields,
-                'relevanceColors': self.make_rel_colors(dataset),
-            },
-            "queries": diff_query_objects,
-            "docs": doc_objects
-        })
+        return json.dumps(
+            {
+                "meta": {
+                    "run1_name": run_1_fn,
+                    "run2_name": run_2_fn,
+                    "dataset": self.config["dataset"],
+                    "measure": self.measure.module_name,
+                    "weight": self.weight.module_name,
+                    "qrelDefs": dataset.qrels_defs(),
+                    "queryFields": dataset.queries_cls()._fields,
+                    "docFields": dataset.docs_cls()._fields,
+                    "relevanceColors": self.make_rel_colors(dataset),
+                },
+                "queries": diff_query_objects,
+                "docs": doc_objects,
+            }
+        )
 
     def print_query_to_console(self, q, console):
         # print query to console using rich
@@ -329,7 +343,7 @@ class MainTask(ModuleBase):
         console.print(query_panel)
 
     def render_snippet_for_cli(self, doc_id, snp, docs):
-        snp_text = docs[doc_id][snp["field"]][snp["start"]:snp["stop"]]
+        snp_text = docs[doc_id][snp["field"]][snp["start"] : snp["stop"]]
         idx_change = 0
         for s, e, w in snp["weights"]:
             s = s + idx_change
@@ -354,11 +368,14 @@ class MainTask(ModuleBase):
             retval = "Unjudged" if rel is None else str(rel)
             return retval
 
-        for run1_doc in q["run_1"][start_idx: end_idx]:
+        for run1_doc in q["run_1"][start_idx:end_idx]:
             snippet = self.render_snippet_for_cli(run1_doc["doc_id"], run1_doc["snippet"], docs)
-            table.add_row(run1_doc["doc_id"],
-                          "[bold]Score[/bold]: {}\n[bold]Rank[/bold]:{}\b".format(run1_doc["score"], str(run1_doc["rank"])),
-                          handle_non(run1_doc["relevance"]), snippet)
+            table.add_row(
+                run1_doc["doc_id"],
+                "[bold]Score[/bold]: {}\n[bold]Rank[/bold]:{}\b".format(run1_doc["score"], str(run1_doc["rank"])),
+                handle_non(run1_doc["relevance"]),
+                snippet,
+            )
 
         self.print_query_to_console(q, console)
         console.print(table)
@@ -375,9 +392,15 @@ class MainTask(ModuleBase):
         self.print_query_to_console(q, console)
 
         # rprint(query_panel)
-        table = Table(show_header=True, header_style="bold red",
-                      title="Comparision [bold]run#1:[/bold] [red]{}[/red] vs [bold]run#2:[/bold] [red]{}[/red]".format(
-                          run1_name, run2_name), show_lines=True, expand=True)
+        table = Table(
+            show_header=True,
+            header_style="bold red",
+            title="Comparision [bold]run#1:[/bold] [red]{}[/red] vs [bold]run#2:[/bold] [red]{}[/red]".format(
+                run1_name, run2_name
+            ),
+            show_lines=True,
+            expand=True,
+        )
         table.add_column("DocID", justify="center", style="cyan", no_wrap=True)
         table.add_column("Run #1", justify="left", style="magenta")
         table.add_column("Rel", justify="center", style="green")
@@ -394,20 +417,24 @@ class MainTask(ModuleBase):
             else:
                 return str(rel)
 
-        for run1_doc, run2_doc in zip(q["run_1"][start_idx: end_idx], q["run_2"][start_idx: end_idx]):
+        for run1_doc, run2_doc in zip(q["run_1"][start_idx:end_idx], q["run_2"][start_idx:end_idx]):
             snp_1 = self.render_snippet_for_cli(run1_doc["doc_id"], run1_doc["snippet"], docs)
             snp_2 = self.render_snippet_for_cli(run2_doc["doc_id"], run2_doc["snippet"], docs)
-            table.add_row(run1_doc["doc_id"],
-                          "[bold]Score[/bold]: {}\n[bold]Rank[/bold]:{}\n[bold]Rank in run#2[/bold]: {}".format(
-                              run1_doc["score"], str(run1_doc["rank"]), docid2rank_run2[run1_doc["doc_id"]]),
-                          handle_non(run1_doc["relevance"]),
-                          snp_1,
-                          " ",
-                          run2_doc["doc_id"],
-                          "[bold]Score[/bold]: {}\n[bold]Rank[/bold]:{}\n[bold]Rank in run#1[/bold]: {}".format(
-                              run2_doc["score"], str(run2_doc["rank"]), docid2rank_run1[run2_doc["doc_id"]]),
-                          handle_non(run2_doc["relevance"]),
-                          snp_2)
+            table.add_row(
+                run1_doc["doc_id"],
+                "[bold]Score[/bold]: {}\n[bold]Rank[/bold]:{}\n[bold]Rank in run#2[/bold]: {}".format(
+                    run1_doc["score"], str(run1_doc["rank"]), docid2rank_run2[run1_doc["doc_id"]]
+                ),
+                handle_non(run1_doc["relevance"]),
+                snp_1,
+                " ",
+                run2_doc["doc_id"],
+                "[bold]Score[/bold]: {}\n[bold]Rank[/bold]:{}\n[bold]Rank in run#1[/bold]: {}".format(
+                    run2_doc["score"], str(run2_doc["rank"]), docid2rank_run1[run2_doc["doc_id"]]
+                ),
+                handle_non(run2_doc["relevance"]),
+                snp_2,
+            )
         console.print(table)
 
     def cli(self, runs):
@@ -421,8 +448,9 @@ class MainTask(ModuleBase):
         console = Console()
         if len(runs) == 2:
             for current_index in range(len(queries)):
-                self.cli_compare_one_query(console, queries[current_index], 0, None, docs, json_data["meta"]["run1_name"],
-                                            json_data["meta"]["run2_name"])
+                self.cli_compare_one_query(
+                    console, queries[current_index], 0, None, docs, json_data["meta"]["run1_name"], json_data["meta"]["run2_name"]
+                )
                 ans = Confirm.ask("Want to see the next query?")
                 if not ans:
                     return
@@ -433,28 +461,28 @@ class MainTask(ModuleBase):
 
     def web(self, runs):
         json_data = self.json(*runs)
-        
-        template = Template(filename='diffir/template.html')
+
+        template = Template(filename="diffir/template.html")
 
         return template.render(data=json_data)
 
     def make_rel_colors(self, dataset):
-        result = {None: '#888888'}
+        result = {None: "#888888"}
         if not dataset.has_qrels():
             return result
         NON_POS_COLORS = {
             0: [],
-            1: ['#d54541'],  # red
-            2: ['#6c272a', '#d54541'],  # dark red, red
-            3: ['#6c272a', '#d54541', '#c7797a'],  # dark red, red, light red
+            1: ["#d54541"],  # red
+            2: ["#6c272a", "#d54541"],  # dark red, red
+            3: ["#6c272a", "#d54541", "#c7797a"],  # dark red, red, light red
         }
         POS_COLORS = {
             0: [],
-            1: ['#52b262'],  # green
-            2: ['#52b262', '#58aadc'],  # green, blue
-            3: ['#caab39', '#52b262', '#58aadc'],  # yellow, green, blue
-            4: ['#cf752b', '#caab39', '#52b262', '#58aadc'],  # orange, yellow, green, blue
-            5: ['#cf752b', '#caab39', '#52b262', '#58aadc', '#8a5fd4'],  # orange, yellow, green, blue, purple
+            1: ["#52b262"],  # green
+            2: ["#52b262", "#58aadc"],  # green, blue
+            3: ["#caab39", "#52b262", "#58aadc"],  # yellow, green, blue
+            4: ["#cf752b", "#caab39", "#52b262", "#58aadc"],  # orange, yellow, green, blue
+            5: ["#cf752b", "#caab39", "#52b262", "#58aadc", "#8a5fd4"],  # orange, yellow, green, blue, purple
         }
         qrel_defs = dataset.qrels_defs()
         nonpos = sorted([k for k in qrel_defs.keys() if k <= 0])

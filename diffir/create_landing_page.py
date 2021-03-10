@@ -23,16 +23,11 @@ if __name__ == "__main__":
 
         with open(os.path.join(args.inputdir, dataset_name, "runs.txt")) as f:
             for filename in f:
-                    print(filename.strip())
-                    runfiles[dataset_name].append(filename.strip())
+                print(filename.strip())
+                runfiles[dataset_name].append(filename.strip())
 
-    env = Environment(
-        loader=PackageLoader('diffir', 'templates'),
-        autoescape=select_autoescape(['html', 'xml'])
-    )
+    env = Environment(loader=PackageLoader("diffir", "templates"), autoescape=select_autoescape(["html", "xml"]))
 
-    landing_template = env.get_template('landing.html')
+    landing_template = env.get_template("landing.html")
     with open(os.path.join(args.inputdir, "index.html"), "wt") as outf:
         print(landing_template.render(datasets=datasets, runfiles=runfiles, rawdata=Markup(json.dumps(runfiles))), file=outf)
-
-

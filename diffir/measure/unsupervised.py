@@ -3,54 +3,56 @@ from diffir.measure import Measure
 from scipy import stats
 import numpy as np
 
+
 @Measure.register
 class TopkMeasure(Measure):
     module_name = "topk"
     config_spec = [
         ConfigOption(key="topk", default_value=3, description="TODO"),
-        ConfigOption(key="metric", default_value="weightedtau", description="Metric to measure the rank correaltion")
+        ConfigOption(key="metric", default_value="weightedtau", description="Metric to measure the rank correaltion"),
     ]
 
     def tauap(self, x, y, decreasing=True):
-        '''
+        """
         AP Rank correalation Coefficient
         :param x: a list of scores
         :param y: another list of scores for comparision
         :param decreasing:
         :return:
             float: the correlation coefficient
-        '''
+        """
         rx = stats.rankdata(x)
         ry = stats.rankdata(y)
         n = len(rx)
 
         numerator = 0
-        for i in range(n-1):
-            for j in range(i+1, n):
+        for i in range(n - 1):
+            for j in range(i + 1, n):
                 sx = np.sign(x[i] - x[j])
                 sy = np.sign(y[i] - y[j])
                 if sx == sy:
-                    numerator += 1/(n - min(ry[i], ry[j]))
-        return (2 * numerator/(n-1)) - 1
+                    numerator += 1 / (n - min(ry[i], ry[j]))
+        return (2 * numerator / (n - 1)) - 1
 
     def tauap_fast(self, x, y):
-        '''
+        """
         AP Ranking Correlation using enhanced merge sort
         :param x:
         :param y:
         :return:
-        '''
+        """
         rx = stats.rankdata(x)
         ry = stats.rankdata(y)
         n = len(ry)
         if n == 1:
             return 1
         ordered_idx = sorted(list(range(n)), key=lambda i: rx[i])
-        ry_ordered_by_rx = [(ry[idx],i) for i, idx in enumerate(ordered_idx)]
+        ry_ordered_by_rx = [(ry[idx], i) for i, idx in enumerate(ordered_idx)]
+
         def merge_sort(arr):
             if len(arr) <= 1:
                 return 0
-            mid = len(arr)//2
+            mid = len(arr) // 2
             L = arr[:mid]
             R = arr[mid:]
             tauAP = 0
@@ -61,8 +63,8 @@ class TopkMeasure(Measure):
             while i < len(L) and j < len(R):
                 if L[i][0] <= R[j][0]:
                     arr[k] = L[i]
-                    if (n-L[i][1]) > 1:
-                        tauAP +=j/(n-L[i][1]-1)
+                    if (n - L[i][1]) > 1:
+                        tauAP += j / (n - L[i][1] - 1)
                     i += 1
                 else:
                     arr[k] = R[j]
@@ -70,16 +72,17 @@ class TopkMeasure(Measure):
                 k += 1
             while i < len(L):
                 arr[k] = L[i]
-                if (n-L[i][1]) > 1:
-                    tauAP +=j/(n-L[i][1]-1)
-                i+=1
-                k+=1
+                if (n - L[i][1]) > 1:
+                    tauAP += j / (n - L[i][1] - 1)
+                i += 1
+                k += 1
             while j < len(R):
                 arr[k] = R[j]
                 j += 1
                 k += 1
             return tauAP
-        res = (2 - 2*merge_sort(ry_ordered_by_rx)/(n-1)) -1
+
+        res = (2 - 2 * merge_sort(ry_ordered_by_rx) / (n - 1)) - 1
         return res
 
     def _query_differences(self, run1, run2, *args, **kwargs):
@@ -100,8 +103,9 @@ class TopkMeasure(Measure):
         id2measure = {}
         for qid in qids:
             from collections import defaultdict
-            doc_score_1 = defaultdict(lambda : 0, run1[qid])
-            doc_score_2 = defaultdict(lambda : 0, run2[qid])
+
+            doc_score_1 = defaultdict(lambda: 0, run1[qid])
+            doc_score_2 = defaultdict(lambda: 0, run2[qid])
             doc_ids_1 = doc_score_1.keys()
             doc_ids_2 = doc_score_2.keys()
             doc_ids_union = set(doc_ids_1).union(set(doc_ids_2))

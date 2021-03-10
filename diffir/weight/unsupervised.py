@@ -13,31 +13,38 @@ class ExactMatchWeight(Weight):
     module_name = "exactmatch"
     config_spec = [
         ConfigOption(key="skip_stopwords", default_value=True, description="TODO"),
-        ConfigOption(key="queryfield", default_value="", value_type="strlist", description="The query field that is used for highlighting")
+        ConfigOption(
+            key="queryfield", default_value="", value_type="strlist", description="The query field that is used for highlighting"
+        ),
     ]
 
     def fast_score_document_regions(self, query, doc, run_idx):
-        '''
+        """
         Score document regions with Aho–Corasick_algorithm.
         :param query:
         :param doc:
         :param run_idx:
         :return:
-        '''
+        """
         try:
-            nltk.data.find('tokenizers/punkt')
+            nltk.data.find("tokenizers/punkt")
         except (LookupError, OSError):
-            nltk.download('punkt')
+            nltk.download("punkt")
         try:
-            nltk.data.find('corpora/stopwords')
+            nltk.data.find("corpora/stopwords")
         except LookupError:
-            nltk.download('stopwords')
+            nltk.download("stopwords")
         result = {}
-        stops = stopwords.words('english') if self.config['skip_stopwords'] else None
+        stops = stopwords.words("english") if self.config["skip_stopwords"] else None
         query_tokens = set()
         for qfield_value in query:
-            query_tokens.update([w.lower() for w in word_tokenize(qfield_value) if (w.isalpha() or w.isnumeric())
-                                 and (not stops or not w.lower() in stops)])
+            query_tokens.update(
+                [
+                    w.lower()
+                    for w in word_tokenize(qfield_value)
+                    if (w.isalpha() or w.isnumeric()) and (not stops or not w.lower() in stops)
+                ]
+            )
         if not hasattr(self, "A"):
             self.A = ahocorasick.Automaton()
         self.A.clear()
@@ -52,9 +59,9 @@ class ExactMatchWeight(Weight):
         for field, values in list(result.items()):
             tree = IntervalTree()
             for start, stop in values:
-                tree[start:stop+1] = 1
+                tree[start : stop + 1] = 1
             tree.merge_overlaps()
-            result[field] = sorted([[i.begin, i.end, 1.] for i in tree])
+            result[field] = sorted([[i.begin, i.end, 1.0] for i in tree])
         return result
 
     def score_document_regions(self, query, doc, run_idx, fast=False):
@@ -62,15 +69,15 @@ class ExactMatchWeight(Weight):
             return self.fast_score_document_regions(query, doc, run_idx)
 
         try:
-            nltk.data.find('tokenizers/punkt')
+            nltk.data.find("tokenizers/punkt")
         except (LookupError, OSError):
-            nltk.download('punkt')
+            nltk.download("punkt")
         try:
-            nltk.data.find('corpora/stopwords')
+            nltk.data.find("corpora/stopwords")
         except LookupError:
-            nltk.download('stopwords')
+            nltk.download("stopwords")
         result = {}
-        stops = stopwords.words('english') if self.config['skip_stopwords'] else None
+        stops = stopwords.words("english") if self.config["skip_stopwords"] else None
 
         qfield_values = []
         specified_qfields = list(filter(None, self.config["queryfield"]))
@@ -97,8 +104,7 @@ class ExactMatchWeight(Weight):
                 if stops and word.lower() in stops:
                     continue
                 for dfield, dvalue in zip(doc._fields, doc):
-                    if not isinstance(dvalue,
-                                      str):  # TODO: how to handle other field types (like the structured CORD19 docs)?
+                    if not isinstance(dvalue, str):  # TODO: how to handle other field types (like the structured CORD19 docs)?
                         continue  # skip non-strings for now
                     if dfield not in result:
                         result[dfield] = []
@@ -110,6 +116,6 @@ class ExactMatchWeight(Weight):
             for start, stop in values:
                 tree[start:stop] = 1
             tree.merge_overlaps()
-            result[field] = sorted([[i.begin, i.end, 1.] for i in tree])
+            result[field] = sorted([[i.begin, i.end, 1.0] for i in tree])
 
         return result
