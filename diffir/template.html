@@ -245,7 +245,7 @@
     var singleRunView = (data.meta.run2_name === null);
 
     function markup(text, weights) {
-      weights = weights.filter(function(e){
+      weights = weights.filter(function (e) {
         return (e[2] > 0 || typeof e[2] === 'string');
       })
       var $result = $('<div></div>');
@@ -275,7 +275,7 @@
       var results = mergedWeights.map((segment) => {
         if (!("run2" in segment[2]) || segment[2].run2 === null) {
           return [segment[0], segment[1], 'rgba(' + COLOR_A + ', ' + segment[2].run1.toString() + ')', segment[2].run1, segment[2].run2];
-        } else if (!("run" in segment[2]) ||segment[2].run1 === null) {
+        } else if (!("run" in segment[2]) || segment[2].run1 === null) {
           return [segment[0], segment[1], 'rgba(' + COLOR_B + ', ' + segment[2].run2.toString() + ')', segment[2].run1, segment[2].run2];
         } else {
           var nil = 'rgba(0, 0, 0, 0)'
@@ -501,10 +501,14 @@
 
       $.each(doc, function (fname, fvalue) {
         if (singleRunView) {
-          mweights[fname] = weightsA[fname].map(segment => {
-            return [segment[0], segment[1], {"run1": segment[2]}];
-          });
-        } 
+          if (!(fname in weightsA)) {
+            mweights[fname] = [];
+          } else {
+            mweights[fname] = weightsA[fname].map(segment => {
+              return [segment[0], segment[1], { "run1": segment[2] }];
+            });
+          }
+        }
         var weights = colorizeWeights(mweights[fname]);
         $('<tr></tr>')
           .append($('<th></th>').text(fname))
