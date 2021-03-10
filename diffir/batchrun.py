@@ -25,7 +25,6 @@ def main():
     output.mkdir(exist_ok=True)
 
     single_runs = []
-    weight_files = {}
     for fn in indir.iterdir():
         if fn.suffix == ".diffir":
             _logger.debug(f"skipping weights file: {fn}")
@@ -33,10 +32,6 @@ def main():
         try:
             # TODO to check whether the file is valid, we call load_trec_run both here and in diffir.run
             load_trec_run(fn)
-            potential_weights_file = "{}.diffir".format(os.path.basename(fn).split(".")[0])
-            if os.path.isfile(os.path.join(indir, potential_weights_file)):
-                weight_files[fn.as_posix()] = os.path.join(indir, potential_weights_file)
-
             single_runs.append(fn.as_posix())
         except:
             _logger.warn(f"failed to parse run: {fn}")
@@ -53,11 +48,6 @@ def main():
                 continue
 
             config = args.config
-            if fn1 in weight_files:
-                config += ["weight.name=custom", "weight.weights_1={}".format(weight_files[fn1])]
-            if fn2 in weight_files:
-                config += ["weight.name=custom", "weight.weights_2={}".format(weight_files[fn2])]
-
             task_config, html = diff([fn1, fn2], config, cli=False, web=True, print_html=False)
             output_fn = output / task_config["dataset"]
             os.makedirs(output_fn, exist_ok=True)
@@ -69,9 +59,6 @@ def main():
 
     for fn1 in single_runs:
         config = args.config
-        if fn1 in weight_files:
-            config += ["weight.name=custom", "weight.weights_1={}".format(weight_files[fn1])]
-
         task_config, html = diff([fn1], config, cli=False, web=True, print_html=False)
         output_fn = output / task_config["dataset"]
         os.makedirs(output_fn, exist_ok=True)
