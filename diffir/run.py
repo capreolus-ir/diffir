@@ -313,7 +313,7 @@ class MainTask(ModuleBase):
         assert dataset.has_queries()
 
         diff_queries = self.measure.query_differences(run_1, run_2, dataset=dataset)
-        _logger.info(diff_queries)
+        # _logger.info(diff_queries)
         diff_query_objects = self.create_query_objects(run_1, run_2, diff_queries, dataset)
         doc_objects = self.create_doc_objects(diff_query_objects, dataset)
 
