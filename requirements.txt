@@ -1,0 +1,7 @@
+profane>=0.2.3,<0.3
+mako~=1.1
+ir_datasets>=0.3.1
+pytrec_eval>=0.5
+intervaltree>=3.1.0
+rich>=9.13.0
+pyahocorasick>=1.4.1

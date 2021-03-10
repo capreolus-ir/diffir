@@ -1,0 +1,20 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# editor tmp files
+*~
+
+# mypy
+.mypy_cache/
+
+.DS_Store
+
+# ide files
+/.vscode
+/*.code-workspace
+
+# docs
+docs/_build

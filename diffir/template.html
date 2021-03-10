@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="icon"
+    href="https://previews.123rf.com/images/antonshaparenko/antonshaparenko2003/antonshaparenko200300235/143437440-information-retrieval-icon-simple-element-from-business-intelligence-collection-filled-information-r.jpg">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <title>diffir: IR model comparision</title>
+  <style>
+    .card {
+      margin: 5px !important;
+    }
+
+    .highlight {
+      background-color: #ffffd3;
+    }
+
+    #DocumentOverlay {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: rgba(0, 0, 0, .25);
+    }
+
+    #DocumentDetails {
+      position: fixed;
+      top: 60px;
+      left: 10%;
+      right: 10%;
+      bottom: 60px;
+      background-color: white;
+      padding: 20px;
+      border: 1px solid rgba(0, 0, 0, .125);
+      border-radius: 0.25rem;
+      box-shadow: 0 0 16px black;
+      overflow: auto;
+    }
+
+    .close-overlay {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      border-radius: 100%;
+      background-color: #111;
+      font-size: 17px;
+      padding: 9px;
+      color: white;
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      font-weight: normal;
+      line-height: 11px;
+      cursor: pointer;
+    }
+
+    .docid {
+      background-color: rgb(224, 135, 55);
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 20px;
+      overflow: hidden;
+      margin-bottom: 0;
+      border-radius: 0;
+      font-weight: normal;
+      white-space: nowrap;
+    }
+
+    .docid-value {
+      transform: rotate(90deg);
+      font-size: 0.7em;
+      padding-left: 8px;
+    }
+
+    .fields th {
+      vertical-align: top;
+      text-align: right;
+      padding-right: 12px;
+      color: #999;
+      font-weight: normal;
+    }
+
+    #query-container {
+      max-width: 600px;
+      border: 1px solid #999;
+      border-radius: 0.25rem;
+      margin: 20px auto;
+      padding: 10px;
+    }
+
+    .other-rank {
+      font-size: 1.2em;
+      display: inline-block;
+      width: 20px;
+      margin-top: 46px;
+      margin-left: 3px;
+      margin-right: 3px;
+      cursor: help;
+    }
+
+    mark {
+      padding: 0;
+      font-weight: bold;
+    }
+
+    .snippet {
+      font-size: 0.9em;
+      line-height: 1.2;
+    }
+
+    .elip {
+      text-align: center;
+      margin: 16px;
+      color: gray;
+    }
+
+    .doc-info {
+      white-space: nowrap;
+    }
+
+    .card-header {
+      min-height: 128px;
+      cursor: pointer;
+    }
+
+    .swatch {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+    }
+
+    .form-group {
+      width: 150px;
+      height: 20px;
+      padding-left: 10px;
+      padding-top: 10px;
+    }
+
+    .nobackground {
+      background: transparent !important;
+      font-weight: normal;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="collapse bg-dark" id="navbarHeader">
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-8 col-md-7 py-4">
+            <h6 class="text-white">About</h6>
+            <p class="text-muted">Add some information about the album below, the author, or any other background
+              context. Make it a few sentences long so folks can pick up some informative tidbits. Then, link them off
+              to some social networking sites or contact information.</p>
+          </div>
+          <div class="col-sm-4 offset-md-1 py-4">
+            <h6 class="text-white">Contact</h6>
+            <ul class="list-unstyled">
+              <li><a href="#" class="text-white">Follow on Twitter</a></li>
+              <li><a href="#" class="text-white">Like on Facebook</a></li>
+              <li><a href="#" class="text-white">Email me</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="navbar navbar-dark bg-dark box-shadow navbar-fixed-top">
+      <div class="container d-flex justify-content-between">
+        <a href="#" class="navbar-brand d-flex align-items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search"
+            viewBox="0 0 16 16">
+            <path
+              d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+          </svg>
+          <strong style="padding-left:  5px;">DiffIR</strong>
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarHeader"
+          aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+  <div class="container">
+    <div class="input-group" style="padding-top: 50px; padding-bottom: 10px; background-color: white;">
+      <select id="Queries" class="custom-select"></select>
+    </div>
+    <div id="query-container" class="sticky-top" style="background-color: white;">
+      <div style="position:relative">
+        <button id="query-collapse-btn" style="position: absolute; top: 12px; right: 8px;" type="button"
+          class="btn btn-outline-info btn-sm" data-toggle="collapse" data-target=".query_collapse" aria-expanded="false"
+          aria-controls="query_collapse">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+            class="bi bi-arrows-angle-expand" viewBox="0 0 16 16">
+            <path fill-rule="evenodd"
+              d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707z" />
+          </svg>
+        </button>
+      </div>
+      <div id="Query" style="padding-right: 45px;">
+      </div>
+    </div>
+    <div class="row justify-content-center" id="runName">
+      <div class="col">
+        <h6 id="Run1Name" style="text-align: center;"></h6>
+      </div>
+      <div class="col">
+        <h6 id="Run2Name" style="text-align: center;"></h6>
+      </div>
+    </div>
+    <div class="row" id="docList">
+      <div id="Run1Docs" class="col">
+      </div>
+      <div id="Run2Docs" class="col">
+      </div>
+    </div>
+  </div>
+  <!-- Optional JavaScript -->
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+    integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+    crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+    integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+    crossorigin="anonymous"></script>
+  <script type="text/javascript">
+    var data = ${ data };
+  </script>
+  <script type="text/javascript">
+    var allWeightsA = {};
+    var allWeightsB = {};
+    var mergedWeights = {};
+    var COLOR_A = '236, 154, 8';
+    var COLOR_B = '121, 196, 121';
+    var singleRunView = (data.meta.run2_name === null);
+
+    function markup(text, weights) {
+      weights = weights.filter(function(e){
+        return (e[2] > 0 || typeof e[2] === 'string');
+      })
+      var $result = $('<div></div>');
+      if (weights.length === 0) {
+        $result.text(text);
+      } else {
+        $result.append($('<span></span>').text(text.substring(0, weights[0][0])));
+        $.each(weights, function (i, weight) {
+          if (typeof weight[2] === 'string') {
+            var weightColor = weight[2];
+          } else {
+            var weightColor = 'rgba(255, 237, 140, ' + weight[2].toString() + ')';
+          }
+          $result.append($('<mark></mark>').text(text.substring(weight[0], weight[1])).css('background', weightColor).attr("run1", weight[3]).attr("run2", weight[4]));
+          if (i + 1 < weights.length) {
+            $result.append($('<span></span>').text(text.substring(weight[1], weights[i + 1][0])));
+          }
+        });
+        $result.append($('<span></span>').text(text.substring(weights[weights.length - 1][1], text.length)));
+      }
+      return $result;
+    }
+
+    function colorizeWeights(mergedWeights) {
+      // deep copu & handle if doesn't exist
+      mergedWeights = mergedWeights ? JSON.parse(JSON.stringify(mergedWeights)) : [];
+      var results = mergedWeights.map((segment) => {
+        if (!("run2" in segment[2]) || segment[2].run2 === null) {
+          return [segment[0], segment[1], 'rgba(' + COLOR_A + ', ' + segment[2].run1.toString() + ')', segment[2].run1, segment[2].run2];
+        } else if (!("run" in segment[2]) ||segment[2].run1 === null) {
+          return [segment[0], segment[1], 'rgba(' + COLOR_B + ', ' + segment[2].run2.toString() + ')', segment[2].run1, segment[2].run2];
+        } else {
+          var nil = 'rgba(0, 0, 0, 0)'
+          var colorA = 'rgba(' + COLOR_A + ', ' + segment[2].run1.toString() + ')';
+          var colorB = 'rgba(' + COLOR_B + ', ' + segment[2].run2.toString() + ')';
+          var overlapColors = 'linear-gradient(' + colorA + ', ' + nil + '), linear-gradient(' + nil + ', ' + colorB + ')'
+          return [segment[0], segment[1], overlapColors, segment[2].run1, segment[2].run2];
+        }
+      })
+      return results;
+    }
+    function generateDocListSingleView(run, container, oneRunWeights) {
+      $(container).empty();
+      $(container).css("padding-left", "15%").css("padding-right", "15%");
+      $.each(run, function (i, doc) {
+        oneRunWeights[doc.doc_id] = doc.weights;
+        if (i >= 1 && run[i - 1].rank + 1 != doc.rank) {
+          $('<div class="elip"></div>').text('⋮ ' + (doc.rank - run[i - 1].rank - 1).toString() + ' doc(s) skipped').appendTo(container);
+        }
+        var $did = $('<div class="docid"></div>').append($('<div class="docid-value"></div>').text(doc.doc_id));
+        $did.css('background-color', data.meta.relevanceColors[doc.relevance !== null ? doc.relevance.toString() : 'null']).css("right", '0');
+        if (doc.relevance === null) {
+          var $rel = $('<h6 class="badge badge-info">Unjudged</h6>').css('background-color', data.meta.relevanceColors['null']);
+        } else {
+          var $rel = $('<h6 class="badge badge-info"></h6>').text('Rel: ' + doc.relevance).css('background-color', data.meta.relevanceColors[doc.relevance.toString()]).attr('title', data.meta.qrelDefs[doc.relevance.toString()]).css('cursor', 'help');
+        }
+        var $score = $('<h6 class="badge"></h6>').text('Score: ' + doc.score.toFixed(4));
+        var doc_fields = data.docs[doc.doc_id];
+        var $text = markup(doc_fields[doc.snippet.field].substring(doc.snippet.start, doc.snippet.stop), doc.snippet.weights)
+        if (doc.snippet.stop < doc_fields[doc.snippet.field].length) {
+          $text.append('...');
+        }
+        if (doc.snippet.start > 0) {
+          $text.prepend('...');
+        }
+        $text.prepend($('<span style="color: #999;"></span>').text(doc.snippet.field + ': '));
+        var newEl = $('<div></div>')
+          .append($('<div class="card"></div>')
+            .attr('data-docid', doc.doc_id)
+            .append($('<div class="card-header"></div>')
+              // .css('padding-' + docIdFloat, '30px')
+              .append(doc.rank)
+              .append(' ')
+              .append($did)
+              .append(' ')
+              .append($rel)
+              .append(' ')
+              .append($score)
+              .append($('<div class="snippet"></div>').append($text))
+            )
+          )
+          .appendTo(container);
+      });
+    }
+    function generateDocList(run, otherRun, container, docIdFloat, allWeights) {
+      $(container).empty();
+      $.each(run, function (i, doc) {
+        allWeights[doc.doc_id] = doc.weights;
+        if (i >= 1 && run[i - 1].rank + 1 != doc.rank) {
+          $('<div class="elip"></div>').text('⋮ ' + (doc.rank - run[i - 1].rank - 1).toString() + ' doc(s) skipped').appendTo(container);
+        }
+        var $did = $('<div class="docid"></div>').append($('<div class="docid-value"></div>').text(doc.doc_id));
+        $did.css('background-color', data.meta.relevanceColors[doc.relevance !== null ? doc.relevance.toString() : 'null']).css(docIdFloat, '0');
+        if (doc.relevance === null) {
+          var $rel = $('<h6 class="badge badge-info">Unjudged</h6>').css('background-color', data.meta.relevanceColors['null']);
+        } else {
+          var $rel = $('<h6 class="badge badge-info"></h6>').text('Rel: ' + doc.relevance).css('background-color', data.meta.relevanceColors[doc.relevance.toString()]).attr('title', data.meta.qrelDefs[doc.relevance.toString()]).css('cursor', 'help');
+        }
+        var $score = $('<h6 class="badge"></h6>').text('Score: ' + doc.score.toFixed(4));
+        var doc_fields = data.docs[doc.doc_id];
+        var $text = markup(doc_fields[doc.snippet.field].substring(doc.snippet.start, doc.snippet.stop), doc.snippet.weights)
+        if (doc.snippet.stop < doc_fields[doc.snippet.field].length) {
+          $text.append('...');
+        }
+        if (doc.snippet.start > 0) {
+          $text.prepend('...');
+        }
+        $text.prepend($('<span style="color: #999;"></span>').text(doc.snippet.field + ': '));
+        // $text.append(' ').append('<a href="#" class="doc-info" role="button">See more</a>');
+        var otherRank = null;
+        $.each(otherRun, function (i, otherDoc) {
+          if (otherDoc.doc_id === doc.doc_id) {
+            otherRank = otherDoc.rank;
+            return false; // break
+          }
+        });
+        if (otherRank === null) {
+          var symbol = '✖';
+          var tip = 'not ranked in other run';
+        }
+        else if (doc.rank === otherRank) {
+          var symbol = docIdFloat === 'right' ? '→' : '←';
+          var tip = 'ranked equally in other run'
+        } else if (doc.rank < otherRank) {
+          var symbol = docIdFloat === 'right' ? '⬊' : '⬋';
+          var tip = 'ranked lower in other run (' + otherRank + ')'
+        } else if (doc.rank > otherRank) {
+          var symbol = docIdFloat === 'right' ? '⬈' : '⬉';
+          var tip = 'ranked higher in other run (' + otherRank + ')'
+        }
+        var newEl = $('<div></div>')
+          .append($('<span class="other-rank"></span>').text(symbol).css('float', docIdFloat).css('text-align', docIdFloat === 'right' ? 'left' : 'right').attr('title', tip))
+          .append($('<div class="card"></div>')
+            .attr('data-docid', doc.doc_id)
+            .append($('<div class="card-header"></div>')
+              .css('padding-' + docIdFloat, '30px')
+              .append(doc.rank)
+              .append(' ')
+              .append($did)
+              .append(' ')
+              .append($rel)
+              .append(' ')
+              .append($score)
+              .append($('<div class="snippet"></div>').append($text))
+            )
+          )
+          .appendTo(container);
+      });
+    }
+
+    function selectQuery() {
+      var $select = $('#Queries');
+      var query_id = $select.val();
+      var query = data.queries.filter(query => query.fields.query_id === query_id);
+      mergedWeights = query[0].mergedWeights
+      var $query = $('#Query');
+      $query.empty();
+      var $table = $('<table class="fields"></table>').appendTo($query);
+      if (query.length > 0) {
+        query = query[0];
+        $.each(query.fields, function (fname, fvalue) {
+          $('<tr></tr>')
+            .append($('<th></th>').text(fname))
+            .append($('<td></td>').text(fvalue))
+            .appendTo($table);
+        });
+        if (singleRunView) {
+          allWeightsA = {}
+          generateDocListSingleView(query.run_1, "#docList", allWeightsA);
+        } else {
+          allWeightsA = {};
+          allWeightsB = {};
+          generateDocList(query.run_1, query.run_2, '#Run1Docs', 'right', allWeightsA);
+          generateDocList(query.run_2, query.run_1, '#Run2Docs', 'left', allWeightsB);
+        }
+      }
+      var extraFields = $("#Query").find("tr").slice(2).attr("class", "query_collapse collapse");
+      // Don't show expand/collapse button if there are not fields to expand/collapse
+      $('#query-collapse-btn').toggle(extraFields.length > 0);
+    }
+
+    function checkThreshold(value, threshold) {
+      if (typeof value !== 'undefined') {
+        return parseFloat(value) < threshold;
+      } else return true;
+    }
+
+    function onChangeWeightThreshold() {
+      $("#DocumentDetails mark").removeClass("nobackground")
+      var run1Threshold = parseFloat($("#run1Threshold").text());
+      var run2Threshold = parseFloat($("#run2Threshold").text());
+      $("#DocumentDetails mark").each(function () {
+        var run1w = $(this).attr("run1");
+        var run2w = $(this).attr("run2");
+        if (checkThreshold(run1w, run1Threshold) && checkThreshold(run2w, run2Threshold)) {
+          $(this).addClass("nobackground");
+        } else if (checkThreshold(run1w, run1Threshold)) {
+          $(this).css("background", "rgba(" + COLOR_B + "," + run2w + ")");
+        } else if (checkThreshold(run2w, run2Threshold)) {
+          $(this).css("background", "rgba(" + COLOR_A + "," + run1w + ")");
+        } else {
+          $(this).css("background", 'linear-gradient(rgb(' + COLOR_A + '), rgb(' + COLOR_B + '))');
+        }
+      })
+    }
+
+    function onCardEnter() {
+      var did = $(this).attr('data-docid');
+      $('.card[data-docid="' + did + '"').addClass('highlight');
+    }
+
+    function onCardLeave() {
+      var did = $(this).attr('data-docid');
+      $('.card.highlight').removeClass('highlight');
+    }
+
+    function onDocInfoClick() {
+      var docid = $(this).closest('[data-docid]').attr('data-docid');
+      var doc = data.docs[docid];
+      $('<div id="DocumentOverlay"></div>').appendTo(document.body)
+      var page = $('<div id="DocumentDetails" class="sticky-top"></div>')
+        .append($('<div class="close-overlay">X</div>').click(closeDoc))
+        .appendTo(document.body);
+      var legendTable = $('<table class="fields"></table>')
+        .appendTo(page);
+      legendTable.append($('<tr></tr>')
+        .append($('<th></th>').text(data.meta.run1_name))
+        .append($('<td></td>')
+          .append($('<span class="swatch"></span>').css('background-color', 'rgb(' + COLOR_A + ')'))
+        ).append($('<td></td>').append($('<form><div class="form-group"><input type="range" class="form-control-range" min="0", max="1.1", step="0.1" value="0" id="weightThresholdA"></div></form>')))
+        .append($('<td><span id="run1Threshold" class="badge border rounded threshold-value">0</span></td>'))
+      );
+      if (!singleRunView) {
+        legendTable.append($('<tr></tr>')
+          .append($('<th></th>').text(data.meta.run2_name))
+          .append($('<td></td>')
+            .append($('<span class="swatch"></span>').css('background-color', 'rgb(' + COLOR_B + ')'))
+          ).append($('<td></td>')
+            .append($('<form><div class="form-group"><input type="range" class="form-control-range" min="0", max="1.1", step="0.1" value="0" id="weightThresholdB"></div></form>'))
+          ).append($('<td><span id="run2Threshold" class="badge border rounded threshold-value">0</span></td>'))
+        );
+        legendTable.append($('<tr></tr>')
+          .append($('<th>both</th>'))
+          .append($('<td></td>')
+            .append($('<span class="swatch"></span>').css('background', 'linear-gradient(rgb(' + COLOR_A + '), rgb(' + COLOR_B + '))'))
+          ));
+      }
+      var fieldTable = $('<table class="fields"></table>')
+        .appendTo(page);
+      var weightsA = allWeightsA[docid] || {};
+      var weightsB = allWeightsB[docid] || {};
+      var mweights = mergedWeights[docid] || {};
+
+      $.each(doc, function (fname, fvalue) {
+        if (singleRunView) {
+          mweights[fname] = weightsA[fname].map(segment => {
+            return [segment[0], segment[1], {"run1": segment[2]}];
+          });
+        } 
+        var weights = colorizeWeights(mweights[fname]);
+        $('<tr></tr>')
+          .append($('<th></th>').text(fname))
+          .append($('<td></td>').append(markup(fvalue, weights)))
+          .appendTo(fieldTable);
+      });
+
+      $("input").change(function () {
+        var threshold = $(this).closest("form :input").val();
+        if ($(this).attr("id") === "weightThresholdA") {
+          $("#run1Threshold").text(threshold);
+        } else {
+          $("#run2Threshold").text(threshold);
+        }
+        onChangeWeightThreshold();
+      });
+      onChangeWeightThreshold();
+      return false; // prevent nav
+    }
+
+    function closeDoc() {
+      $('#DocumentOverlay,#DocumentDetails').remove();
+    }
+    function ding() {
+      console.log("Reaching limits! Alert");
+    }
+
+    $(function () {
+      if (singleRunView) {
+        $("#runName").empty();
+        $("#runName").append($('<h6 style="text-align: center;"></h6>').text(data.meta.run1_name));
+      } else {
+        $('#Run1Name').text(data.meta.run1_name);
+        $('#Run2Name').text(data.meta.run2_name);
+      }
+      var $select = $('#Queries');
+      var queryDisplayField = null;
+      $.each(data.meta.queryFields, function (i, e) {
+        if (e !== 'query_id') {
+          queryDisplayField = e;
+          return false; // break
+        }
+      });
+      $.each(data.queries, function (_, query) {
+        $('<option>').attr('value', query['fields']['query_id']).text(query.fields[queryDisplayField]).appendTo($select);
+      });
+      $select.change(selectQuery).change();
+      $(document).on('mouseenter', '.card', onCardEnter);
+      $(document).on('mouseleave', '.card', onCardLeave);
+      $(document).on('click', '.card', onDocInfoClick);
+      $(document).on('click', '#DocumentOverlay', closeDoc);
+      $(document).keyup(function (e) {
+        if (e.key === "Escape") {
+          closeDoc();
+        }
+        if (e.key === "ArrowLeft") {
+          var prev_val = $("#Queries option:selected").prev().val();
+          if (typeof prev_val != "undefined") {
+            $select.val(prev_val);
+            $select.trigger("change");
+          } else {
+            ding();
+          }
+        }
+        if (e.key === "ArrowRight") {
+          var next_val = $("#Queries option:selected").next().val();
+          if (typeof next_val != "undefined") {
+            $select.val(next_val);
+            $select.trigger("change");
+          } else {
+            ding();
+          }
+        }
+      });
+    });
+    $(document).ready(function () {
+      $("#Query").find("tr").slice(2).attr("class", "query_collapse collapse")
+      $(".query_collapse").on("shown.bs.collapse", function () {
+        text = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-angle-contract" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M.172 15.828a.5.5 0 0 0 .707 0l4.096-4.096V14.5a.5.5 0 1 0 1 0v-3.975a.5.5 0 0 0-.5-.5H1.5a.5.5 0 0 0 0 1h2.768L.172 15.121a.5.5 0 0 0 0 .707zM15.828.172a.5.5 0 0 0-.707 0l-4.096 4.096V1.5a.5.5 0 1 0-1 0v3.975a.5.5 0 0 0 .5.5H14.5a.5.5 0 0 0 0-1h-2.768L15.828.879a.5.5 0 0 0 0-.707z"/></svg>';
+        $("#query-collapse-btn").html(text);
+      })
+      $(".query_collapse").on("hidden.bs.collapse", function () {
+        text = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-angle-expand" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707z"></svg>';
+        $("#query-collapse-btn").html(text);
+      })
+    })
+  </script>
+</body>
+
+</html>

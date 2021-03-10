@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="icon"
+    href="https://previews.123rf.com/images/antonshaparenko/antonshaparenko2003/antonshaparenko200300235/143437440-information-retrieval-icon-simple-element-from-business-intelligence-collection-filled-information-r.jpg">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" integrity="sha512-HK5fgLBL+xu6dm/Ii3z4xhlSUyZgTT9tuc/hSrtw6uzJOvgRr2a9jyxxT1ely+B+xFAmJKVSTbpM/CuL7qxO8w==" crossorigin="anonymous" />
+  <title>diffir: IR model comparision</title>
+  <style>
+    .fields th {
+      vertical-align: top;
+      text-align: right;
+      padding-right: 12px;
+      color: #999;
+      font-weight: normal;
+    }
+
+    mark {
+      padding: 0;
+      font-weight: bold;
+    }
+
+  </style>
+  <style>
+    .panel .panel-runfiles {
+      display: none;
+    }
+    .panel .panel-runfiles.is-active {
+      display: block;
+    }
+
+    .container {
+      padding-left: 0px;
+    }
+
+    .runfile:hover {
+      cursor: pointer
+    }
+    .runfile.is-active {
+      background-color: lightsteelblue;
+    }
+
+    .runfile.disabled{
+      pointer-events: none;
+    }
+    .runfile.disabled .run-name{
+      color: #ddd;
+    }
+
+    .runfile.other-side-disabled {
+      pointer-events: none;
+    }
+
+    .runfile.other-side-disabled .run-name {
+      color: #ddd;
+    }
+
+    .runfile.search-excluded {
+      display: none;
+    }
+
+    #go_btn.disabled {
+      pointer-events: none;
+    }
+
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="collapse bg-dark" id="navbarHeader">
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-8 col-md-7 py-4">
+            <h6 class="text-white">About</h6>
+          </div>
+          <div class="col-sm-4 offset-md-1 py-4">
+            <h6 class="text-white">Contact</h6>
+            <ul class="list-unstyled">
+              <li><a href="#" class="text-white">Follow on Twitter</a></li>
+              <li><a href="#" class="text-white">Like on Facebook</a></li>
+              <li><a href="#" class="text-white">Email me</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="navbar navbar-dark bg-dark box-shadow navbar-fixed-top">
+      <div class="container d-flex justify-content-between">
+        <a href="#" class="navbar-brand d-flex align-items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search"
+            viewBox="0 0 16 16">
+            <path
+              d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+          </svg>
+          <strong style="padding-left:  5px;">DiffIR</strong>
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarHeader"
+          aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+  <div class="container">
+    <nav class="panel">
+      <div class="panel-heading">
+        Welcome!
+      </div>
+      <div class="panel-block">
+        <p>
+        Welcome to diffir! Here you'll find some pre-generated runfiles you can use to explore diffir....
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla faucibus mattis magna at sagittis. Sed vitae ultrices dolor, non venenatis mi. Morbi ultricies interdum lacus id lacinia. Phasellus et suscipit metus, pharetra fermentum velit. Sed quis elit tempor, malesuada velit vel, pellentesque diam. Sed vitae arcu a est sollicitudin accumsan. Aliquam volutpat massa turpis, at faucibus est ullamcorper eu. Vestibulum lectus augue, aliquet sed luctus pulvinar, feugiat sed urna. Integer lobortis sapien sit amet gravida faucibus. Maecenas sagittis pretium cursus. Praesent sit amet rutrum ex.
+        </p>
+      </div>
+
+    </nav>
+
+    <nav class="panel">
+      <div class="panel-heading">
+        How-to
+      </div>
+      <div class="panel-block">
+        <div>You can generate these html files yourself by running ...</div>
+        <code>diffir run1 run2 -w measure.name=qrel > somefile.html</code>
+      </div>
+
+    </nav>
+
+    <nav class="panel">
+      <p class="panel-heading">
+        Comparisons
+      </p>
+
+      <p id="tabs" class="panel-tabs">
+        {% for dataset in datasets %}
+          <a id="tab-for-{{dataset}}" class="{% if loop.index < 2 %}is-active {% endif %} dataset-tab" data-dataset={{dataset}}>{{dataset}}</a>
+        {% endfor %}
+      </p>
+
+      <div class="columns">
+        <div class="column">
+
+          <div class="column is-5">
+            <p class="control has-icons-left">
+              <input id="search_left" class="input search" type="text" placeholder="Search" data-side="left">
+              <span class="icon is-left">
+                <i class="fas fa-search" aria-hidden="true"></i>
+              </span>
+            </p>
+          </div>
+
+          {% for dataset in datasets %}
+            <div id="runfiles-for-{{dataset}}-left" class="{% if loop.index < 2 %}is-active {% endif %}panel-runfiles" data-side="left">
+              {% for run_file in runfiles.get(dataset) %}
+                  <div id="{{dataset}}_{{run_file}}_left" class="runfile" data-prefix="{{dataset}}_{{run_file}}" data-dataset="{{dataset}}" data-runfile="{{run_file}}">
+                    <div class="panel-block">
+                      <span class="panel-icon">
+                        <i class="fas fa-book" aria-hidden="true"></i>
+                      </span>
+                      <span class="run-name">{{run_file}}</span>
+                    </div>
+                  </div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+        <div class="column">
+          <div class="column is-5">
+             <p class="control has-icons-left">
+              <input id="search_right" class="input search" type="text" placeholder="Search" data-side="right">
+              <span class="icon is-left">
+                <i class="fas fa-search" aria-hidden="true"></i>
+              </span>
+            </p>
+          </div>
+          {% for dataset in datasets %}
+            <div id="runfiles-for-{{dataset}}-right" class="{% if loop.index < 2 %}is-active {% endif %}panel-runfiles" data-side="right">
+              {% for run_file in runfiles.get(dataset) %}
+                  <div id="{{dataset}}_{{run_file}}_right" class="runfile" data-prefix="{{dataset}}_{{run_file}}" data-dataset="{{dataset}}" data-runfile="{{run_file}}">
+                    <div class="panel-block">
+                      <span class="panel-icon">
+                        <i class="fas fa-book" aria-hidden="true"></i>
+                      </span>
+                        <span class="run-name">{{run_file}}</span>
+                    </div>
+                  </div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="panel-block">
+        <button id="go_btn" class="disabled button">Go</button>
+      </div>
+    </nav>
+  </div>
+  <!-- Optional JavaScript -->
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.js"></script>
+  <script>
+    let raw_data = {{rawdata}};
+    let initialized_fuse_objects = initialize_fuse_objects();
+
+    // Initialize a fuzzy searcher for each dataset and cache it
+    function initialize_fuse_objects(){
+      temp_obj = {}
+      for(const [dataset_name, runfile_names] of Object.entries(raw_data)) {
+        temp_obj[dataset_name] = new Fuse(runfile_names, {"threshold": 0.2});
+      }
+
+      return temp_obj;
+    }
+
+    // Allow switching dataset tabs
+    $("a.dataset-tab").click(function(e){
+      let prev_dataset_name = $("a.dataset-tab.is-active").attr('data-dataset')
+      let dataset_name = $(this).attr("data-dataset")
+
+      // start of: Clear all effects applied `to runfiles in the previous tab
+      let $prev_selection_left = $("#runfiles-for-" + prev_dataset_name + "-left .runfile")
+      $prev_selection_left.removeClass("is-active")
+      $prev_selection_left.removeClass("disabled")
+      $prev_selection_left.removeClass("other-side-disabled")
+      $prev_selection_left.removeClass("search-excluded")
+
+      let $prev_selection_right = $("#runfiles-for-" + prev_dataset_name + "-right .runfile")
+      $prev_selection_right.removeClass("is-active")
+      $prev_selection_right.removeClass("disabled")
+      $prev_selection_right.removeClass("other-side-disabled")
+      $prev_selection_right.removeClass("search-excluded")
+
+      $("#search_left").val('');
+      $("#search_right").val('');
+
+      $("#go_btn").removeClass("is-primary");
+      $("#go_btn").addClass("disabled");
+
+      // end of: clearing previously applied effects
+
+
+      $(".panel-runfiles").removeClass("is-active")
+      $("#runfiles-for-" + dataset_name + "-left").addClass("is-active")
+      $("#runfiles-for-" + dataset_name + "-right").addClass("is-active")
+
+      $(".dataset-tab").removeClass("is-active")
+      $("#tab-for-" + dataset_name).addClass("is-active")
+    });
+
+    // When a runfile is clicked, select it, and disable clicking on other runfiles on the same side
+    $(".runfile").click(function(e){
+      if($(this).hasClass("is-active")) {
+        $(this).removeClass("is-active");
+        $(this).siblings(".runfile").removeClass("disabled");
+        let dataset_runfile = $(this).attr("data-prefix");
+        let curr_side = $(this).parents(".panel-runfiles").attr("data-side");
+        let other_side = curr_side === "left" ? "right" : "left";
+        let other_side_elem = $("#" + $.escapeSelector(dataset_runfile) + "_" + other_side);
+        other_side_elem.removeClass("other-side-disabled");
+      }
+      else {
+        let dataset_runfile = $(this).attr("data-prefix");
+        let curr_side = $(this).parents(".panel-runfiles").attr("data-side");
+        let other_side = curr_side === "left" ? "right" : "left";
+
+        let other_side_elem = $("#" + $.escapeSelector(dataset_runfile) + "_" + other_side);
+        other_side_elem.addClass("other-side-disabled");
+
+        $(".panel-runfiles[data-side='" + other_side + "'] ")
+        $(this).siblings(".runfile").addClass("disabled");
+        $(this).addClass("is-active");
+      }
+
+      show_hide_go_button();
+    });
+
+    // Form urs and open the right html file
+    $("#go_btn").click(function(){
+      let active_runfiles = $(".runfile.is-active")
+      let dataset = active_runfiles.eq(0).attr("data-dataset");
+      let curr_url = window.location.href
+
+      if(active_runfiles.length === 1){
+        let runfile = active_runfiles.eq(0).attr("data-runfile");
+        let relative_url = "/" + dataset + "/" + runfile + ".html";
+        window.location.href = curr_url + "/.." + relative_url
+      }
+      else if(active_runfiles.length === 2) {
+          let runfile_1 = active_runfiles.eq(0).attr("data-runfile");
+          let runfile_2 = active_runfiles.eq(1).attr("data-runfile");
+
+          //so that the order in which the user selects the runfile doesn't affect the file name
+          if(runfile_1 > runfile_2){
+            let temp = runfile_1;
+            runfile_1 = runfile_2;
+            runfile_2 = temp;
+          }
+
+          let relative_url = "/" + dataset + "/"+ runfile_1 + "___" + runfile_2 + ".html"
+
+          window.location.href = curr_url + "/.." + relative_url
+      }
+    });
+
+
+    $("input.search").keyup(function(){
+      let dataset = $("#tabs .is-active").attr("data-dataset");
+      let run_filenames_for_dataset = raw_data[dataset];
+      let fuse = initialized_fuse_objects[dataset];
+      let side = $(this).attr("data-side");
+      let query = $(this).val();
+
+      if(!query.length) {
+        apply_search_results(dataset, side, run_filenames_for_dataset);
+      }
+      else{
+        let search_results = fuse.search(query);
+        search_results = $.map(search_results, (result_obj) => {return result_obj["item"]})
+
+        apply_search_results(dataset, side, search_results);
+      }
+
+    });
+
+    function apply_search_results(dataset, side, results) {
+      let search_results = new Set(results);
+
+      $("#runfiles-for-" + dataset +"-" + side + " .runfile").each(function(){
+        const runfile_name = $(this).attr("data-runfile");
+
+        if(!search_results.has(runfile_name)){
+          $(this).addClass("search-excluded");
+        }
+        else {
+          $(this).removeClass("search-excluded")
+        }
+      });
+
+    }
+
+    function show_hide_go_button() {
+      if(!$(".runfile.is-active").length) {
+          $("#go_btn").removeClass("is-primary");
+          $("#go_btn").addClass("disabled");
+      }
+      else {
+        $("#go_btn").addClass("is-primary");
+        $("#go_btn").removeClass("disabled");
+      }
+    }
+
+
+  </script>
+</body>
+
+</html>
+
