@@ -10,12 +10,13 @@ from diffir.utils import load_trec_run
 
 _logger = ir_datasets.log.easy()
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("directory")
     parser.add_argument("-o", "--output", dest="output_dir")
-    #parser.add_argument("-c", "--cli", dest="cli", action="store_true")
-    #parser.add_argument("-w", "--web", dest="web", action="store_true")
+    # parser.add_argument("-c", "--cli", dest="cli", action="store_true")
+    # parser.add_argument("-w", "--web", dest="web", action="store_true")
     parser.add_argument("--config", dest="config", nargs="*")
 
     args = parser.parse_args()

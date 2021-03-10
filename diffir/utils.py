@@ -3,6 +3,7 @@ import ir_datasets
 
 _logger = ir_datasets.log.easy()
 
+
 def load_trec_run(run_fn):
     _logger.info("Loading run file: {}".format(run_fn))
     run = defaultdict(dict)

@@ -43,10 +43,5 @@ setuptools.setup(
     classifiers=["Programming Language :: Python :: 3", "Operating System :: OS Independent"],
     python_requires=">=3.6",
     include_package_data=True,
-    entry_points={
-        "console_scripts": [
-            "diffir=diffir.run:main",
-            "diffir-batch=diffir.batchrun:main",
-        ],
-    },
+    entry_points={"console_scripts": ["diffir=diffir.run:main", "diffir-batch=diffir.batchrun:main"]},
 )

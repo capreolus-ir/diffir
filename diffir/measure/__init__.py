@@ -5,7 +5,7 @@ class Measure(ModuleBase):
     module_type = "measure"
     config_spec = [
         ConfigOption(key="metric", default_value="ndcg_20", description="The metric to use for selecting queries"),
-        ConfigOption(key="topk", default_value=5, description="How many queries to retrieve")
+        ConfigOption(key="topk", default_value=5, description="How many queries to retrieve"),
     ]
 
     # TODO finalize API
@@ -13,7 +13,7 @@ class Measure(ModuleBase):
         if run1 and run2:
             return self._query_differences(run1, run2, *args, **kwargs)
         elif run1 and run2 is None:
-            return sorted(list(run1.keys()))[:self.config["topk"]]
+            return sorted(list(run1.keys()))[: self.config["topk"]]
 
     def _query_differences(self, run1, run2, *args, **kwargs):
         raise NotImplementedError
