@@ -445,7 +445,7 @@
         } else if (checkThreshold(run2w, run2Threshold)) {
           $(this).css("background", "rgba(" + COLOR_A + "," + run1w + ")");
         } else {
-          $(this).css("background", 'linear-gradient(rgb(' + COLOR_A + '), rgb(' + COLOR_B + '))');
+          $(this).css("background", 'linear-gradient(rgba('+ COLOR_A + "," + run1w + '),  rgba( '+ COLOR_B + "," + run2w + '))');
         }
       })
     }
