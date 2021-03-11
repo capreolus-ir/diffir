@@ -562,7 +562,7 @@
         if (e.key === "Escape") {
           closeDoc();
         }
-        if (e.key === "ArrowLeft") {
+        if (e.key === "ArrowLeft" && !$("#Queries").is(":focus")) {
           var prev_val = $("#Queries option:selected").prev().val();
           if (typeof prev_val != "undefined") {
             $select.val(prev_val);
@@ -571,7 +571,7 @@
             ding();
           }
         }
-        if (e.key === "ArrowRight") {
+        if (e.key === "ArrowRight" && !$("#Queries").is(":focus")) {
           var next_val = $("#Queries option:selected").next().val();
           if (typeof next_val != "undefined") {
             $select.val(next_val);
