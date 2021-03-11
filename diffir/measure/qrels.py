@@ -33,6 +33,6 @@ class QrelMeasure(Measure):
         evaluator = pytrec_eval.RelevanceEvaluator(qrels, {metric})
         eval_run_1 = evaluator.evaluate(run1)
         eval_run_2 = evaluator.evaluate(run2)
-        query_ids = run1.keys()
+        query_ids = run1.keys() & run2.keys()
         query_ids = sorted(query_ids, key=lambda x: abs(eval_run_1[x][metric] - eval_run_2[x][metric]), reverse=True)
         return query_ids[:topk]
