@@ -51,7 +51,7 @@ def main():
     single_runs = sorted(single_runs)  # sorted needed for itertools ordering
     queue = [(fn,) for fn in single_runs] + list(itertools.combinations(single_runs, 2))
     f = partial(process_runs, config=args.config, output=output)
-    with multiprocessing.Pool(multiprocessing.cpu_count()) as p:
+    with multiprocessing.Pool(8) as p:
         outdirs = p.map(f, queue)
 
     with open(outdirs[0] / "runs.txt", "wt") as outf:
