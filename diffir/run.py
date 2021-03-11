@@ -462,7 +462,8 @@ class MainTask(ModuleBase):
     def web(self, runs):
         json_data = self.json(*runs)
 
-        template = Template(filename="diffir/template.html")
+        script_dir = os.path.dirname(__file__)
+        template = Template(filename=os.path.join(script_dir, "template.html"))
 
         return template.render(data=json_data)
 
