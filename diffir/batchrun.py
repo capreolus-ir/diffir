@@ -1,6 +1,8 @@
 import argparse
+import itertools
+import multiprocessing
 import os
-import sys
+from functools import partial
 from pathlib import Path
 
 import ir_datasets
@@ -11,12 +13,22 @@ from diffir.utils import load_trec_run
 _logger = ir_datasets.log.easy()
 
 
+def process_runs(fns, config, output):
+    task_config, html = diff(fns, config, cli=False, web=True, print_html=False)
+    outdir = output / task_config["dataset"]
+    outdir.mkdir(exist_ok=True, parents=True)
+
+    outfn = outdir / ("___".join(os.path.basename(x) for x in fns) + ".html")
+    with open(outfn, "wt") as outf:
+        print(html, file=outf)
+
+    return outdir
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("directory")
     parser.add_argument("-o", "--output", dest="output_dir")
-    # parser.add_argument("-c", "--cli", dest="cli", action="store_true")
-    # parser.add_argument("-w", "--web", dest="web", action="store_true")
     parser.add_argument("--config", dest="config", nargs="*")
 
     args = parser.parse_args()
@@ -36,39 +48,15 @@ def main():
         except:
             _logger.warn(f"failed to parse run: {fn}")
 
-    processed_pairs = set()
-    for fn1 in sorted(single_runs):
-        for fn2 in single_runs:
-            if fn1 == fn2:
-                continue
-            if fn1 > fn2:
-                fn1, fn2 = fn2, fn1
+    single_runs = sorted(single_runs)  # sorted needed for itertools ordering
+    queue = [(fn,) for fn in single_runs] + list(itertools.combinations(single_runs, 2))
+    f = partial(process_runs, config=args.config, output=output)
+    with multiprocessing.Pool(8) as p:
+        outdirs = p.map(f, queue)
 
-            if (fn1, fn2) in processed_pairs:
-                continue
-
-            config = args.config
-            task_config, html = diff([fn1, fn2], config, cli=False, web=True, print_html=False)
-            output_fn = output / task_config["dataset"]
-            os.makedirs(output_fn, exist_ok=True)
-
-            with open(output_fn / (os.path.basename(fn1) + "___" + os.path.basename(fn2) + ".html"), "wt") as outf:
-                print(html, file=outf)
-
-            processed_pairs.add((fn1, fn2))
-
-    for fn1 in single_runs:
-        config = args.config
-        task_config, html = diff([fn1], config, cli=False, web=True, print_html=False)
-        output_fn = output / task_config["dataset"]
-        os.makedirs(output_fn, exist_ok=True)
-
-        with open(output_fn / (os.path.basename(fn1) + ".html"), "wt") as outf:
-            print(html, file=outf)
-
-        with open(output_fn / "runs.txt", "wt") as outf:
-            for run in sorted(single_runs):
-                print(run.split("/")[-1], file=outf)
+    with open(outdirs[0] / "runs.txt", "wt") as outf:
+        for run in sorted(single_runs):
+            print(run.split("/")[-1], file=outf)
 
 
 if __name__ == "__main__":
