@@ -2,6 +2,7 @@ from profane import ModuleBase, Dependency, ConfigOption
 from diffir.measure import Measure
 from scipy import stats
 import numpy as np
+import math
 
 
 @Measure.register
@@ -85,6 +86,23 @@ class TopkMeasure(Measure):
         res = (2 - 2 * merge_sort(ry_ordered_by_rx) / (n - 1)) - 1
         return res
 
+    def pearson_rank(self, x, y):
+        x = np.interp(x, (min(x), max(x)), (0,1))
+        y = np.interp(y, (min(y), max(y)), (0,1))
+        indices = sorted(list(range(len(x))), key=lambda idx : x[idx], reverse=True)
+        x = x[indices]
+        y = y[indices]
+        den = x[1:].sum()
+        pr = 0
+        for i in range(1,len(x)):
+            num_i = sum([(x[j]-x[i])*(y[j]-y[i]) for j in range(0,i)])
+            den_i = math.sqrt(sum([(x[j]-x[i])*(x[j]-x[i]) for j in range(0,i)])) * math.sqrt(sum([(y[j]-y[i])*(y[j]-y[i]) for j in range(0,i)]))
+            if den_i == 0:
+                den_i = 1e-5
+            pr += x[i]*num_i/den_i
+        pr = pr/den
+        return pr
+              
     def _query_differences(self, run1, run2, *args, **kwargs):
         """
         :param run1: TREC run. Has the format {qid: {docid: score}, ...}
@@ -118,6 +136,8 @@ class TopkMeasure(Measure):
                 tau = self.tauap_fast(union_score1, union_score2)
             elif metric == "spearmanr":
                 tau, p_value = stats.spearmanr(union_score1, union_score2)
+            elif metric == "pearsonr":
+                tau = self.pearson_rank(union_score1, union_score2)
             else:
                 raise ValueError("Metric {} not supported for the measure {}".format(self.config["metric"], self.module_name))
             id2measure[qid] = tau
