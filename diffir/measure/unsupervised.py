@@ -120,4 +120,6 @@ class TopkMeasure(Measure):
                 raise ValueError("Metric {} not supported for the measure {}".format(self.config["metric"], self.module_name))
             id2measure[qid] = tau
         qids = sorted(qids, key=lambda x: id2measure[x])
-        return qids[:topk]
+        qids = qids[:topk]
+        id2measure = {idx: id2measure[idx] for idx in qids}
+        return qids, id2measure, metric

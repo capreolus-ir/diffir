@@ -35,4 +35,6 @@ class QrelMeasure(Measure):
         eval_run_2 = evaluator.evaluate(run2)
         query_ids = eval_run_1.keys() & eval_run_2.keys()
         query_ids = sorted(query_ids, key=lambda x: abs(eval_run_1[x][metric] - eval_run_2[x][metric]), reverse=True)
-        return query_ids[:topk]
+        query_ids = query_ids[:topk]
+        id2diff = {x:abs(eval_run_1[x][metric] - eval_run_2[x][metric]) for x in query_ids}
+        return query_ids, id2diff, metric
