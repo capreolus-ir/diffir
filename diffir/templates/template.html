@@ -363,7 +363,7 @@
           }
         });
         if (otherRank === null) {
-          var symbol = '✖';
+          var symbol = '×';
           var tip = 'not ranked in other run';
         }
         else if (doc.rank === otherRank) {
@@ -377,12 +377,12 @@
           var tip = 'ranked higher in other run (' + otherRank + ')'
         }
         var newEl = $('<div></div>')
-          .append($('<span class="other-rank"></span>').text(symbol).css('float', docIdFloat).css('text-align', docIdFloat === 'right' ? 'left' : 'right').attr('title', tip))
+          // .append($('<span class="other-rank"></span>').text(symbol).css('float', docIdFloat).css('text-align', docIdFloat === 'right' ? 'left' : 'right').attr('title', tip))
           .append($('<div class="card"></div>')
             .attr('data-docid', doc.doc_id)
             .append($('<div class="card-header"></div>')
               .css('padding-' + docIdFloat, '30px')
-              .append(doc.rank)
+              .append($("<span class='border badge' style='min-width: 50px; font-weight: normal;color: grey;'></span>").html('<span style="font-size: 1.2em;font-weight:bold; color: black;">'+doc.rank +'</span> '+symbol + (otherRank === null ? '': otherRank)).attr('title', tip))
               .append(' ')
               .append($did)
               .append(' ')
