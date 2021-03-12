@@ -557,7 +557,7 @@
         }
       });
       $.each(data.queries, function (_, query) {
-        $('<option>').attr('value', query['fields']['query_id']).attr('data-subtext', query.fields.metric.name+':'+query.fields.metric.value).text(query.fields[queryDisplayField]).appendTo($select);
+        $('<option>').attr('value', query['fields']['query_id']).attr('data-subtext', query.fields.metric.name+': '+query.fields.metric.value.toFixed(5)).text(query.fields[queryDisplayField]).appendTo($select);
       });
       $select.change(selectQuery).change();
       $(document).on('mouseenter', '.card', onCardEnter);
