@@ -483,7 +483,7 @@
         .append($('<td></td>')
           .append($('<span class="swatch"></span>').css('background-color', 'rgb(' + COLOR_A + ')'))
         )
-        .append($('<td></td>').append($(" <span class='border badge'></span>").text("Rank: " +run1Rank)))
+        .append($('<td></td>').append($(" <span class='border badge' style='mind-width: 70px;'></span>").text("Rank: " +run1Rank)))
         .append($('<td></td>').append($('<form><div class="form-group"><input type="range" class="form-control-range" min="0", max="1.1", step="0.1" value="0.1" id="weightThresholdA"></div></form>').attr("title", "slide to change weight threshold")))
         .append($('<td><span id="run1Threshold" class="badge border rounded threshold-value">0.1</span></td>'))
       );
@@ -494,7 +494,7 @@
           .append($('<td></td>')
             .append($('<span class="swatch"></span>').css('background-color', 'rgb(' + COLOR_B + ')'))
           )
-          .append($('<td></td>').append($(" <span class='border badge'></span>").text("Rank: " +run2Rank)))
+          .append($('<td></td>').append($(" <span class='border badge' style='min-width: 70px;'></span>").text("Rank: " +run2Rank)))
           .append($('<td></td>')
             .append($('<form><div class="form-group"><input type="range" class="form-control-range" min="0", max="1.1", step="0.1" value="0.1" id="weightThresholdB"></div></form>').attr("title", "slide to change weight threshold"))
           ).append($('<td><span id="run2Threshold" class="badge border rounded threshold-value">0.1</span></td>'))
