@@ -116,6 +116,8 @@ class TopkMeasure(Measure):
                 tau, p_value = stats.weightedtau(union_score1, union_score2)
             elif metric == "tauap":
                 tau = self.tauap_fast(union_score1, union_score2)
+            elif metric == "spearmanr":
+                tau, p_value = stats.spearmanr(union_score1, union_score2)
             else:
                 raise ValueError("Metric {} not supported for the measure {}".format(self.config["metric"], self.module_name))
             id2measure[qid] = tau
