@@ -463,7 +463,7 @@ class MainTask(ModuleBase):
         json_data = self.json(*runs)
 
         script_dir = os.path.dirname(__file__)
-        template = Template(filename=os.path.join(script_dir, "template.html"))
+        template = Template(filename=os.path.join(script_dir, "templates", "template.html"))
 
         return template.render(data=json_data)
 
