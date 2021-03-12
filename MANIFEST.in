@@ -1,0 +1,2 @@
+include diffir/templates/template.html
+include diffir/templates/landing.html
