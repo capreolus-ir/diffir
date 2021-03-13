@@ -107,7 +107,14 @@ class TopkMeasure(Measure):
         den_i[den_i==0]=1e-5
         res = (xy*x[1:]/den_i).sum()/den 
         return res
-              
+
+    def kl_div(self, x, y):
+        x = np.array(x) - min(x) + 1e-5
+        y = np.array(y) - min(y) + 1e-5
+        x = x/x.sum()
+        y = y/y.sum()
+        return -(stats.entropy(x,y)+stats.entropy(y,x))/2
+
     def _query_differences(self, run1, run2, *args, **kwargs):
         """
         :param run1: TREC run. Has the format {qid: {docid: score}, ...}
@@ -126,9 +133,9 @@ class TopkMeasure(Measure):
         id2measure = {}
         for qid in qids:
             from collections import defaultdict
-
-            doc_score_1 = defaultdict(lambda: 0, run1[qid])
-            doc_score_2 = defaultdict(lambda: 0, run2[qid])
+            min_value = min(min(run1[qid].values()), min(run2[qid].values()))-1e-5
+            doc_score_1 = defaultdict(lambda: min_value, run1[qid])
+            doc_score_2 = defaultdict(lambda: min_value, run2[qid])
             doc_ids_1 = doc_score_1.keys()
             doc_ids_2 = doc_score_2.keys()
             doc_ids_union = set(doc_ids_1).union(set(doc_ids_2))
@@ -143,6 +150,8 @@ class TopkMeasure(Measure):
                 tau, p_value = stats.spearmanr(union_score1, union_score2)
             elif metric == "pearsonr":
                 tau = (self.pearson_rank(union_score1, union_score2)+self.pearson_rank(union_score2, union_score1))/2
+            elif metric == "kldiv":
+                tau = self.kl_div(union_score1, union_score2)
             else:
                 raise ValueError("Metric {} not supported for the measure {}".format(self.config["metric"], self.module_name))
             id2measure[qid] = tau
