@@ -315,7 +315,7 @@
         var newEl = $('<div></div>')
           .append($('<div class="card"></div>')
             .attr('data-docid', doc.doc_id)
-            .attr('rank1-rank', doc.rank)
+            .attr('run1-rank', doc.rank)
             .append($('<div class="card-header"></div>')
               // .css('padding-' + docIdFloat, '30px')
               .append(doc.rank)
@@ -565,7 +565,11 @@
         }
       });
       $.each(data.queries, function (_, query) {
-        $('<option>').attr('value', query['fields']['query_id']).attr("data-tokens", query.fields.query_id + " " + query.fields[queryDisplayField]).attr('data-subtext', query.fields.metric.name+': '+query.fields.metric.value.toFixed(5)).text(query.fields[queryDisplayField]).appendTo($select);
+        if (!singleRunView){
+          $('<option>').attr('value', query['fields']['query_id']).attr("data-tokens", query.fields.query_id + " " + query.fields[queryDisplayField]).attr('data-subtext', query.fields.metric.name+': '+query.fields.metric.value.toFixed(5)).text(query.fields[queryDisplayField]).appendTo($select);
+        } else {
+          $('<option>').attr('value', query['fields']['query_id']).text(query.fields[queryDisplayField]).appendTo($select);
+        }
       });
       $select.change(selectQuery).change();
       $(document).on('mouseenter', '.card', onCardEnter);
