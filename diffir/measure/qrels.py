@@ -42,7 +42,7 @@ class QrelMeasure(Measure):
         query_ids = query_ids[:topk]
         id2diff = {x:abs(eval_run_1[x][metric] - eval_run_2[x][metric]) for x in query_ids}
 
-        return query_ids, id2diff, metric
+        return query_ids, id2diff, self.config["metric"]
 
     def convert_to_nested_dict(self, ir_measures_iterator):
         """
