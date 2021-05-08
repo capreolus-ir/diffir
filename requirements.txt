@@ -5,3 +5,5 @@ pytrec_eval>=0.5
 intervaltree>=3.1.0
 rich>=9.13.0
 pyahocorasick>=1.4.1
+nltk
+ir_measures
