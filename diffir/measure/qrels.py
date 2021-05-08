@@ -1,4 +1,4 @@
-from ir_measures import iter_calc
+from ir_measures import iter_calc, parse_measure
 from profane import ModuleBase, Dependency, ConfigOption
 from diffir.measure import Measure
 
@@ -28,7 +28,11 @@ class QrelMeasure(Measure):
         run2 = {qid: doc_id_to_score for qid, doc_id_to_score in run2.items() if qid in overlapping_keys}
 
         qrels = dataset.qrels_dict()
-        metric = self.config["metric"]
+        try:
+            metric = parse_measure(self.config["metric"])
+        except NameError:
+            print("Unknown measure: {}. Please provide a measure supported by https://ir-measur.es/".format(self.config["metric"]))
+
         topk = self.config["topk"]
         eval_run_1 = self.convert_to_nested_dict(iter_calc([metric], qrels, run1))
         eval_run_2 = self.convert_to_nested_dict(iter_calc([metric], qrels, run2))
