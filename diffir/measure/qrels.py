@@ -1,4 +1,5 @@
 from ir_measures import iter_calc, parse_measure
+import sys
 from profane import ModuleBase, Dependency, ConfigOption
 from diffir.measure import Measure
 
@@ -32,6 +33,7 @@ class QrelMeasure(Measure):
             metric = parse_measure(self.config["metric"])
         except NameError:
             print("Unknown measure: {}. Please provide a measure supported by https://ir-measur.es/".format(self.config["metric"]))
+            sys.exit(1)
 
         topk = self.config["topk"]
         eval_run_1 = self.convert_to_nested_dict(iter_calc([metric], qrels, run1))
