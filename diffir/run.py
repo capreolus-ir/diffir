@@ -45,7 +45,7 @@ def main():
     parser.add_argument("--dataset", dest="dataset", type=str)
     parser.add_argument("--measure", dest="measure", type=str, default="qrel")
     parser.add_argument("--mmetric", dest="mmetric", type=str, default="map")
-    parser.add_argument("--mtopk", dest="mtopk", type=int, default="3")
+    parser.add_argument("--mtopk", dest="mtopk", type=int, default=3)
     parser.add_argument("--weights_1", dest="weights_1", type=str, default=None, required=False)
     parser.add_argument("--weights_2", dest="weights_2", type=str, default=None, required=False)
     # parser.add_argument("--config", dest="config", nargs="*")
@@ -59,6 +59,7 @@ def diff(runs, config, cli, web, print_html=True):
     for i, run in enumerate(runs):
         if config["weight"][f"weights_{i + 1}"] is None:
             if os.path.exists(run + ".diffir"):
+                _logger.info("Found weight file at {}".format(run+".diffir"))
                 config["weight"][f"weights_{i + 1}"] = run + ".diffir"
     task = MainTask(**config)
     if cli:

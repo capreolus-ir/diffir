@@ -2,8 +2,10 @@ from diffir.measure import Measure
 from scipy import stats
 import numpy as np
 
+
 class TopkMeasure(Measure):
-    module_name="topk"
+    module_name = "topk"
+
     def tauap(self, x, y, decreasing=True):
         """
         AP Rank correalation Coefficient
@@ -78,33 +80,33 @@ class TopkMeasure(Measure):
         return res
 
     def pearson_rank(self, x, y):
-        x = np.interp(x, (min(x), max(x)), (0,1))
-        y = np.interp(y, (min(y), max(y)), (0,1))
-        indices = sorted(list(range(len(x))), key=lambda idx : x[idx], reverse=True)
+        x = np.interp(x, (min(x), max(x)), (0, 1))
+        y = np.interp(y, (min(y), max(y)), (0, 1))
+        indices = sorted(list(range(len(x))), key=lambda idx: x[idx], reverse=True)
         x = x[indices]
         y = y[indices]
-        x_diff = x.reshape(1,-1) - x.reshape(-1,1)
-        y_diff = y.reshape(1,-1) - y.reshape(-1,1)
+        x_diff = x.reshape(1, -1) - x.reshape(-1, 1)
+        y_diff = y.reshape(1, -1) - y.reshape(-1, 1)
         den = x[1:].sum()
         pr = 0
-        mask = np.tril(np.ones((len(x),len(x))),k=-1)
-        xy = x_diff*y_diff*mask
-        xx = x_diff*x_diff*mask
-        yy = y_diff*y_diff*mask 
+        mask = np.tril(np.ones((len(x), len(x))), k=-1)
+        xy = x_diff * y_diff * mask
+        xx = x_diff * x_diff * mask
+        yy = y_diff * y_diff * mask
         xy = xy.sum(axis=1)[1:]
         xx = xx.sum(axis=1)[1:]
         yy = yy.sum(axis=1)[1:]
-        den_i = np.sqrt(xx)*np.sqrt(yy)
-        den_i[den_i==0]=1e-5
-        res = (xy*x[1:]/den_i).sum()/den 
+        den_i = np.sqrt(xx) * np.sqrt(yy)
+        den_i[den_i == 0] = 1e-5
+        res = (xy * x[1:] / den_i).sum() / den
         return res
 
     def kl_div(self, x, y):
         x = np.array(x) - min(x) + 1e-5
         y = np.array(y) - min(y) + 1e-5
-        x = x/x.sum()
-        y = y/y.sum()
-        return -(stats.entropy(x,y)+stats.entropy(y,x))/2
+        x = x / x.sum()
+        y = y / y.sum()
+        return -(stats.entropy(x, y) + stats.entropy(y, x)) / 2
 
     def _query_differences(self, run1, run2, *args, **kwargs):
         """
@@ -124,13 +126,14 @@ class TopkMeasure(Measure):
         id2measure = {}
         for qid in qids:
             from collections import defaultdict
-            min_value = min(min(run1[qid].values()), min(run2[qid].values()))-1e-5
+            min_value = min(min(run1[qid].values()), min(run2[qid].values())) - 1e-5
             doc_score_1 = defaultdict(lambda: min_value, run1[qid])
             doc_score_2 = defaultdict(lambda: min_value, run2[qid])
             doc_ids_1 = doc_score_1.keys()
             doc_ids_2 = doc_score_2.keys()
             doc_ids_union = set(doc_ids_1).union(set(doc_ids_2))
-            doc_ids_union = sorted(list(doc_ids_union), key=lambda id: (doc_score_1[id] + doc_score_2[id]), reverse=True)
+            doc_ids_union = sorted(list(doc_ids_union), key=lambda id: (doc_score_1[id] + doc_score_2[id]),
+                                   reverse=True)
             union_score1 = [doc_score_1[doc_id] for doc_id in doc_ids_union]
             union_score2 = [doc_score_2[doc_id] for doc_id in doc_ids_union]
             if metric == "weightedtau":
@@ -140,7 +143,8 @@ class TopkMeasure(Measure):
             elif metric == "spearmanr":
                 tau, p_value = stats.spearmanr(union_score1, union_score2)
             elif metric == "pearsonr":
-                tau = (self.pearson_rank(union_score1, union_score2)+self.pearson_rank(union_score2, union_score1))/2
+                tau = (self.pearson_rank(union_score1, union_score2) + self.pearson_rank(union_score2,
+                                                                                         union_score1)) / 2
             elif metric == "kldiv":
                 tau = self.kl_div(union_score1, union_score2)
             else:

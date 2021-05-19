@@ -19,7 +19,7 @@ class Measure:
         if run1 and run2:
             return self._query_differences(run1, run2, *args, **kwargs)
         elif run1 and run2 is None:
-            qids = sorted(list(run1.keys()))[: self.config["topk"]]
+            qids = sorted(list(run1.keys()))[: self.topk]
             id2diff = {qid: 0 for qid in qids}
             return qids, id2diff, "singlerun"
 

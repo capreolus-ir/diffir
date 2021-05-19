@@ -1,10 +1,13 @@
 import json
 import ir_datasets
 from . import Weight
+
 _logger = ir_datasets.log.easy()
+
 
 class CustomWeight(Weight):
     module_name = "custom"
+
     def __init__(self, weights_1, weights_2, norm_1="minmax", norm_2="minmax"):
         '''
         Customed weights file from ranking models
