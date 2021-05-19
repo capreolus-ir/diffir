@@ -1,27 +1,16 @@
 import os
-import sys
-from collections import defaultdict
-
 import numpy as np
 import argparse
 import json
 from collections import defaultdict
 from tqdm import tqdm
-
 from intervaltree import IntervalTree, Interval
-
-from docopt import docopt
-
 from profane import config_list_to_dict, constants, ConfigOption, Dependency, ModuleBase
-
 from mako.template import Template
 from rich.console import Console
 from rich.table import Table
-from rich import print as rprint
 from rich.prompt import Confirm
-from rich.live import Live
 from rich.panel import Panel
-from rich.layout import Layout
 import ir_datasets
 from diffir.utils import load_trec_run
 
