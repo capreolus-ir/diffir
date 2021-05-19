@@ -15,6 +15,7 @@ class CustomWeight(Weight):
         '''
         self.weights = [weights_1, weights_2]
         self.norms = [norm_1, norm_2]
+        self.build()
 
     def build(self):
         self._cache = {}

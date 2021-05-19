@@ -5,7 +5,6 @@ import json
 from collections import defaultdict
 from tqdm import tqdm
 from intervaltree import IntervalTree, Interval
-from profane import config_list_to_dict, constants, ConfigOption, Dependency, ModuleBase
 from mako.template import Template
 from rich.console import Console
 from rich.table import Table
@@ -13,13 +12,10 @@ from rich.prompt import Confirm
 from rich.panel import Panel
 import ir_datasets
 
-from diffir import QrelMeasure, TopkMeasure, CustomWeight
+from diffir import QrelMeasure, TopkMeasure, CustomWeight, ExactMatchWeight
 from diffir.utils import load_trec_run
 
 _logger = ir_datasets.log.easy()
-
-# specify a base package that profane should look for modules under
-constants["BASE_PACKAGE"] = "diffir"
 
 
 def main():
@@ -49,14 +45,14 @@ def main():
     parser.add_argument("--dataset", dest="dataset", type=str)
     parser.add_argument("--measure", dest="measure", type=str, default="qrel")
     parser.add_argument("--mmetric", dest="mmetric", type=str, default="map")
-    parser.add_argument("--mtopk", dest="mtopk", type=str, default="3")
+    parser.add_argument("--mtopk", dest="mtopk", type=int, default="3")
     parser.add_argument("--weights_1", dest="weights_1", type=str, default=None, required=False)
     parser.add_argument("--weights_2", dest="weights_2", type=str, default=None, required=False)
     # parser.add_argument("--config", dest="config", nargs="*")
     args = parser.parse_args()
-    config = {"measure": args.measure, "mmetric": args.mmetric, "mtopk": args.mtopk,
+    config = {"dataset": args.dataset, "measure": args.measure, "mmetric": args.mmetric, "mtopk": args.mtopk,
                 "weight": {"weights_1": args.weights_1, "weights_2": args.weights_2}}
-    diff(args.runfiles, cli=args.cli, web=args.web,)
+    diff(args.runfiles, config, cli=args.cli, web=args.web,)
 
 
 def diff(runs, config, cli, web, print_html=True):
@@ -71,30 +67,24 @@ def diff(runs, config, cli, web, print_html=True):
         html = task.web(runs)
         if print_html:
             print(html)
-        return task.config, html
+        return config, html
 
 
-class MainTask(ModuleBase):
+class MainTask:
     module_type = "task"
     module_name = "main"
-    config_spec = [
-        ConfigOption(key="dataset", default_value="none", description="TODO"),
-        ConfigOption(key="queries", default_value="none", description="TODO"),
-    ]
-    dependencies = [
-        Dependency(key="measure", module="measure", name="topk"),
-        Dependency(key="weight", module="weight", name="exactmatch"),
-    ]
 
     def __init__(self, dataset="none", queries="none", measure="topk", mmetric="weighted_tau", mtopk=3, weight={}):
         self.dataset = dataset
         self.queries = queries
-        if measure == "qrel":
+        if measure == "qrels":
             self.measure = QrelMeasure(mmetric, mtopk)
-        elif measure == "topk":
+        else:
             self.measure = TopkMeasure(mmetric, mtopk)
         if weight["weights_1"] or weight["weights_2"]:
             self.weight = CustomWeight(weight["weights_1"], weight["weights_2"])
+        else:
+            self.weight = ExactMatchWeight()
 
     def create_query_objects(self, run_1, run_2, qids, qid2diff, metric_name, dataset):
         """

@@ -6,8 +6,10 @@ from nltk.corpus import stopwords
 from . import Weight
 import ahocorasick
 
+
 class ExactMatchWeight(Weight):
     module_name = "exactmatch"
+
     def __init__(self, queryfield="", skip_stopwords=True):
         self.queryfield = queryfield
         self.skip_stopwords = True
@@ -53,7 +55,7 @@ class ExactMatchWeight(Weight):
         for field, values in list(result.items()):
             tree = IntervalTree()
             for start, stop in values:
-                tree[start : stop + 1] = 1
+                tree[start: stop + 1] = 1
             tree.merge_overlaps()
             result[field] = sorted([[i.begin, i.end, 1.0] for i in tree])
         return result
@@ -74,7 +76,7 @@ class ExactMatchWeight(Weight):
         stops = stopwords.words("english") if self.skip_stopwords else None
 
         qfield_values = []
-        specified_qfields = list(filter(None, self.skip_stopwords))
+        specified_qfields = list(filter(None, self.queryfield))
 
         # Choose a query field to do the highlighting with
         if specified_qfields:
