@@ -12,6 +12,8 @@ from rich.table import Table
 from rich.prompt import Confirm
 from rich.panel import Panel
 import ir_datasets
+
+from diffir import QrelMeasure, TopkMeasure, CustomWeight
 from diffir.utils import load_trec_run
 
 _logger = ir_datasets.log.easy()
@@ -44,23 +46,25 @@ def main():
     parser.add_argument("runfiles", nargs="+")
     parser.add_argument("-c", "--cli", dest="cli", action="store_true")
     parser.add_argument("-w", "--web", dest="web", action="store_true")
-    parser.add_argument("--config", dest="config", nargs="*")
-
+    parser.add_argument("--dataset", dest="dataset", type=str)
+    parser.add_argument("--measure", dest="measure", type=str, default="qrel")
+    parser.add_argument("--mmetric", dest="mmetric", type=str, default="map")
+    parser.add_argument("--mtopk", dest="mtopk", type=str, default="3")
+    parser.add_argument("--weights_1", dest="weights_1", type=str, default=None, required=False)
+    parser.add_argument("--weights_2", dest="weights_2", type=str, default=None, required=False)
+    # parser.add_argument("--config", dest="config", nargs="*")
     args = parser.parse_args()
-    diff(args.runfiles, args.config, cli=args.cli, web=args.web)
+    config = {"measure": args.measure, "mmetric": args.mmetric, "mtopk": args.mtopk,
+                "weight": {"weights_1": args.weights_1, "weights_2": args.weights_2}}
+    diff(args.runfiles, cli=args.cli, web=args.web,)
 
 
 def diff(runs, config, cli, web, print_html=True):
-    config = config_list_to_dict(config) if config else {}
-
-    # hack to automatically add weight files when available and not already specified
-    config_with_defaults = MainTask(config, build=False).config
     for i, run in enumerate(runs):
-        if f"weights_{i+1}" in config_with_defaults["weight"] and config_with_defaults["weight"][f"weights_{i+1}"] is None:
+        if config["weight"][f"weights_{i + 1}"] is None:
             if os.path.exists(run + ".diffir"):
-                config.setdefault("weight", {})[f"weights_{i+1}"] = run + ".diffir"
-
-    task = MainTask(config)
+                config["weight"][f"weights_{i + 1}"] = run + ".diffir"
+    task = MainTask(**config)
     if cli:
         task.cli(runs)
     if web:
@@ -81,6 +85,16 @@ class MainTask(ModuleBase):
         Dependency(key="measure", module="measure", name="topk"),
         Dependency(key="weight", module="weight", name="exactmatch"),
     ]
+
+    def __init__(self, dataset="none", queries="none", measure="topk", mmetric="weighted_tau", mtopk=3, weight={}):
+        self.dataset = dataset
+        self.queries = queries
+        if measure == "qrel":
+            self.measure = QrelMeasure(mmetric, mtopk)
+        elif measure == "topk":
+            self.measure = TopkMeasure(mmetric, mtopk)
+        if weight["weights_1"] or weight["weights_2"]:
+            self.weight = CustomWeight(weight["weights_1"], weight["weights_2"])
 
     def create_query_objects(self, run_1, run_2, qids, qid2diff, metric_name, dataset):
         """
@@ -127,7 +141,7 @@ class MainTask(ModuleBase):
             )
 
             fields = query._asdict()
-            fields["metric"]={"name": metric_name, "value": qid2diff[query.query_id]}
+            fields["metric"] = {"name": metric_name, "value": qid2diff[query.query_id]}
             qrels_for_query = qrels.get(query.query_id, {})
             run_1_for_query = []
             for rank, (doc_id, score) in enumerate(run_1[query.query_id].items()):
@@ -207,7 +221,8 @@ class MainTask(ModuleBase):
                 for segment in doc_id2weights[doc_id]["run2"].get(field, []):
                     t.add(Interval(segment[0], segment[1], {"run2": segment[2]}))
                 t.split_overlaps()
-                t.merge_equals(lambda old_dict, new_dict: old_dict.update(new_dict) or old_dict, {"run1": None, "run2": None})
+                t.merge_equals(lambda old_dict, new_dict: old_dict.update(new_dict) or old_dict,
+                               {"run1": None, "run2": None})
                 merged_intervals = sorted([(i.begin, i.end, i.data) for i in t], key=lambda x: (x[0], x[1]))
                 merged_weights[doc_id][field] = merged_intervals
 
@@ -246,7 +261,7 @@ class MainTask(ModuleBase):
                     top_field = field
         # reconstruct the snippet
         if top_snippet_score > 0:
-            snp_weights = sorted(weights[top_field])[top_range[0] : top_range[1]]
+            snp_weights = sorted(weights[top_field])[top_range[0]: top_range[1]]
             # start = max(snp_weights[0][1] - max(0, (MAX_SNIPPET_LEN - snp_weights[-1][0] + snp_weights[0][1])/2), 0)
             start = max(snp_weights[0][0] - 5, 0)
             stop = start + MAX_SNIPPET_LEN
@@ -281,7 +296,7 @@ class MainTask(ModuleBase):
                 doc_ids_to_fetch.add(listed_doc["doc_id"])
 
         for doc in _logger.pbar(
-            dataset.docs_store().get_many_iter(doc_ids_to_fetch), desc="Docs iter", total=len(doc_ids_to_fetch)
+                dataset.docs_store().get_many_iter(doc_ids_to_fetch), desc="Docs iter", total=len(doc_ids_to_fetch)
         ):
             doc_objects[doc.doc_id] = doc._asdict()
 
@@ -296,7 +311,7 @@ class MainTask(ModuleBase):
         run_1 = load_trec_run(run_1_fn)
         run_2 = load_trec_run(run_2_fn) if run_2_fn is not None else None
 
-        dataset = ir_datasets.load(self.config["dataset"])
+        dataset = ir_datasets.load(self.dataset)
         assert dataset.has_docs()
         assert dataset.has_queries()
         # TODO: handle the case without qrels
@@ -312,7 +327,7 @@ class MainTask(ModuleBase):
                 "meta": {
                     "run1_name": run_1_fn,
                     "run2_name": run_2_fn,
-                    "dataset": self.config["dataset"],
+                    "dataset": self.dataset,
                     "measure": self.measure.module_name,
                     "weight": self.weight.module_name,
                     "qrelDefs": dataset.qrels_defs(),
@@ -333,7 +348,7 @@ class MainTask(ModuleBase):
         console.print(query_panel)
 
     def render_snippet_for_cli(self, doc_id, snp, docs):
-        snp_text = docs[doc_id][snp["field"]][snp["start"] : snp["stop"]]
+        snp_text = docs[doc_id][snp["field"]][snp["start"]: snp["stop"]]
         idx_change = 0
         for s, e, w in snp["weights"]:
             s = s + idx_change
@@ -439,7 +454,8 @@ class MainTask(ModuleBase):
         if len(runs) == 2:
             for current_index in range(len(queries)):
                 self.cli_compare_one_query(
-                    console, queries[current_index], 0, None, docs, json_data["meta"]["run1_name"], json_data["meta"]["run2_name"]
+                    console, queries[current_index], 0, None, docs, json_data["meta"]["run1_name"],
+                    json_data["meta"]["run2_name"]
                 )
                 ans = Confirm.ask("Want to see the next query?")
                 if not ans:
@@ -447,7 +463,8 @@ class MainTask(ModuleBase):
         else:
             with console.pager():
                 for current_index in range(len(queries)):
-                    self.cli_display_one_query(console, queries[current_index], 0, None, docs, json_data["meta"]["run1_name"])
+                    self.cli_display_one_query(console, queries[current_index], 0, None, docs,
+                                               json_data["meta"]["run1_name"])
 
     def web(self, runs):
         json_data = self.json(*runs)

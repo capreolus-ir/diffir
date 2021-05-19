@@ -1,18 +1,9 @@
-from profane import ModuleBase, Dependency, ConfigOption
 from diffir.measure import Measure
-from scipy import stats
+import scipy import stats
 import numpy as np
-import math
 
-
-@Measure.register
 class TopkMeasure(Measure):
-    module_name = "topk"
-    config_spec = [
-        ConfigOption(key="topk", default_value=3, description="TODO"),
-        ConfigOption(key="metric", default_value="weightedtau", description="Metric to measure the rank correaltion"),
-    ]
-
+    module_name="topk"
     def tauap(self, x, y, decreasing=True):
         """
         AP Rank correalation Coefficient
@@ -124,8 +115,8 @@ class TopkMeasure(Measure):
         :return: The union of top k qids in both runs, sorted by the order in which the queries appear in run 1
         ^ This is because run 1 appears on the left hand side in the web ui
         """
-        topk = self.config["topk"]
-        metric = self.config["metric"]
+        topk = self.topk
+        metric = self.metric
         qids = run1.keys() & run2.keys()
         if not qids:
             raise ValueError("run1 and run2 have no shared qids")
@@ -153,7 +144,7 @@ class TopkMeasure(Measure):
             elif metric == "kldiv":
                 tau = self.kl_div(union_score1, union_score2)
             else:
-                raise ValueError("Metric {} not supported for the measure {}".format(self.config["metric"], self.module_name))
+                raise ValueError("Metric {} not supported for the measure {}".format(self.metric, "metric"))
             id2measure[qid] = tau
         qids = sorted(qids, key=lambda x: id2measure[x])
         qids = qids[:topk]
