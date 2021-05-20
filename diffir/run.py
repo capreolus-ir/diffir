@@ -43,14 +43,14 @@ def main():
     parser.add_argument("-c", "--cli", dest="cli", action="store_true")
     parser.add_argument("-w", "--web", dest="web", action="store_true")
     parser.add_argument("--dataset", dest="dataset", type=str)
-    parser.add_argument("--measure", dest="measure", type=str, default="qrel")
-    parser.add_argument("--metric", dest="metric", type=str, default="map")
-    parser.add_argument("--topk", dest="topk", type=int, default=3)
+    parser.add_argument("--measure", dest="measure", type=str, default="tauap")
+    parser.add_argument("--metric", dest="metric", type=str, default="MAP")
+    parser.add_argument("--topk", dest="topk", type=int, default=10)
     parser.add_argument("--weights_1", dest="weights_1", type=str, default=None, required=False)
     parser.add_argument("--weights_2", dest="weights_2", type=str, default=None, required=False)
     # parser.add_argument("--config", dest="config", nargs="*")
     args = parser.parse_args()
-    config = {"dataset": args.dataset, "measure": args.measure, "metric": args.metric, "topk": args.topk,
+    config = {"dataset": args.dataset, "measure": args.measure.lower(), "metric": args.metric.lower(), "topk": args.topk,
                 "weight": {"weights_1": args.weights_1, "weights_2": args.weights_2}}
     diff(args.runfiles, config, cli=args.cli, web=args.web,)
 
@@ -78,10 +78,20 @@ class MainTask:
     def __init__(self, dataset="none", queries="none", measure="topk", metric="weighted_tau", topk=3, weight={}):
         self.dataset = dataset
         self.queries = queries
-        if measure == "qrels":
+        if measure == "qrel":
             self.measure = QrelMeasure(metric, topk)
+        elif measure == "tauap":
+            self.measure = TopkMeasure("tauap", topk)
+        elif measure == "weightedtau":
+            self.measure = TopkMeasure("weightedtau", topk)
+        elif measure == "spearmanr":
+            self.measure = TopkMeasure("spearmanr", topk)
+        elif measure == "pearsonr":
+            self.measure = TopkMeasure("pearsonr", topk)
+        elif measure == "kldiv":
+            self.measure = TopkMeasure("kldiv", topk)
         else:
-            self.measure = TopkMeasure(metric, topk)
+            raise ValueError("Measure {} is not supported".format(measure))
         if weight["weights_1"] or weight["weights_2"]:
             self.weight = CustomWeight(weight["weights_1"], weight["weights_2"])
         else:
