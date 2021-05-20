@@ -44,13 +44,13 @@ def main():
     parser.add_argument("-w", "--web", dest="web", action="store_true")
     parser.add_argument("--dataset", dest="dataset", type=str)
     parser.add_argument("--measure", dest="measure", type=str, default="qrel")
-    parser.add_argument("--mmetric", dest="mmetric", type=str, default="map")
-    parser.add_argument("--mtopk", dest="mtopk", type=int, default=3)
+    parser.add_argument("--metric", dest="metric", type=str, default="map")
+    parser.add_argument("--topk", dest="topk", type=int, default=3)
     parser.add_argument("--weights_1", dest="weights_1", type=str, default=None, required=False)
     parser.add_argument("--weights_2", dest="weights_2", type=str, default=None, required=False)
     # parser.add_argument("--config", dest="config", nargs="*")
     args = parser.parse_args()
-    config = {"dataset": args.dataset, "measure": args.measure, "mmetric": args.mmetric, "mtopk": args.mtopk,
+    config = {"dataset": args.dataset, "measure": args.measure, "metric": args.metric, "topk": args.topk,
                 "weight": {"weights_1": args.weights_1, "weights_2": args.weights_2}}
     diff(args.runfiles, config, cli=args.cli, web=args.web,)
 
@@ -75,13 +75,13 @@ class MainTask:
     module_type = "task"
     module_name = "main"
 
-    def __init__(self, dataset="none", queries="none", measure="topk", mmetric="weighted_tau", mtopk=3, weight={}):
+    def __init__(self, dataset="none", queries="none", measure="topk", metric="weighted_tau", topk=3, weight={}):
         self.dataset = dataset
         self.queries = queries
         if measure == "qrels":
-            self.measure = QrelMeasure(mmetric, mtopk)
+            self.measure = QrelMeasure(metric, topk)
         else:
-            self.measure = TopkMeasure(mmetric, mtopk)
+            self.measure = TopkMeasure(metric, topk)
         if weight["weights_1"] or weight["weights_2"]:
             self.weight = CustomWeight(weight["weights_1"], weight["weights_2"])
         else:

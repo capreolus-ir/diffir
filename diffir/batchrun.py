@@ -31,10 +31,10 @@ def main():
     parser.add_argument("-o", "--output", dest="output_dir")
     parser.add_argument("--dataset", dest="dataset", type=str)
     parser.add_argument("--measure", dest="measure", type=str, default="qrel")
-    parser.add_argument("--mmetric", dest="mmetric", type=str, default="map")
-    parser.add_argument("--mtopk", dest="mtopk", type=int, default=3)
+    parser.add_argument("--metric", dest="metric", type=str, default="map")
+    parser.add_argument("--topk", dest="topk", type=int, default=3)
     args = parser.parse_args()
-    config = {"dataset": args.dataset, "measure": args.measure, "mmetric": args.mmetric, "mtopk": args.mtopk,
+    config = {"dataset": args.dataset, "measure": args.measure, "metric": args.metric, "topk": args.topk,
                 "weight": {"weights_1": None, "weights_2": None}}
     indir = Path(args.directory)
     output = Path(args.output_dir) if args.output_dir else indir / "diffir"
