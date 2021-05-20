@@ -40,8 +40,8 @@ class TopkMeasure(Measure):
         n = len(ry)
         if n == 1:
             return 1
-        ordered_idx = sorted(list(range(n)), key=lambda i: rx[i])
-        ry_ordered_by_rx = [(ry[idx], i) for i, idx in enumerate(ordered_idx)]
+        ordered_idx = sorted(list(range(n)), key=lambda i: ry[i])
+        rx_ordered_by_ry = [(rx[idx], i) for i, idx in enumerate(ordered_idx)]
 
         def merge_sort(arr):
             if len(arr) <= 1:
@@ -75,8 +75,7 @@ class TopkMeasure(Measure):
                 j += 1
                 k += 1
             return tauAP
-
-        res = (2 - 2 * merge_sort(ry_ordered_by_rx) / (n - 1)) - 1
+        res = (2 - 2 * merge_sort(rx_ordered_by_ry) / (n - 1)) - 1
         return res
 
     def pearson_rank(self, x, y):
