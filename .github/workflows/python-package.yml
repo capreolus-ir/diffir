@@ -18,6 +18,7 @@ jobs:
           pip install numpy
           pip install scipy
           pip install pytest
+          pip install -r requirements.txt
       - name: Test with pytest
         run: |
           export PYTHONPATH=${PYTHONPATH}:/home/runner/work/capreolus/diffir
