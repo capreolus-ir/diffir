@@ -1,3 +1,4 @@
+nltk>=3.5
 mako~=1.1
 ir_datasets>=0.3.1
 pytrec_eval>=0.5
