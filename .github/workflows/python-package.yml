@@ -20,5 +20,6 @@ jobs:
           pip install pytest
       - name: Test with pytest
         run: |
+          export PYTHONPATH=${PYTHONPATH}:/home/runner/work/capreolus/diffir
           pytest
 
