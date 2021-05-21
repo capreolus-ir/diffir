@@ -31,9 +31,9 @@ def main():
     parser.add_argument("--weights_2", dest="weights_2", type=str, default=None, required=False)
     # parser.add_argument("--config", dest="config", nargs="*")
     args = parser.parse_args()
-    config = {"dataset": args.dataset, "measure": args.measure.lower(), "metric": args.metric.lower(), "topk": args.topk,
+    config = {"dataset": args.dataset, "measure": args.measure, "metric": args.metric, "topk": args.topk,
                 "weight": {"weights_1": args.weights_1, "weights_2": args.weights_2}}
-    diff(args.runfiles, config, cli=args.cli, web=args.web,)
+    diff(args.runfiles, config, cli=args.cli, web=args.web)
 
 
 def diff(runs, config, cli, web, print_html=True):
