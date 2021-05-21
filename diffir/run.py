@@ -78,7 +78,7 @@ class MainTask:
         else:
             self.weight = ExactMatchWeight()
 
-    def create_query_objects(self, run_1, run_2, qids, qid2diff, metric_name, dataset):
+    def create_query_objects(self, run_1, run_2, qids, qid2diff, metric_name, dataset, qid2qrelscores=None):
         """
         TODO: Need a better name
         This method takes in 2 runs and a set of qids, and constructs a dict for each qid (format specified below)
@@ -124,6 +124,9 @@ class MainTask:
 
             fields = query._asdict()
             fields["metric"] = {"name": metric_name, "value": qid2diff[query.query_id]}
+            if qid2qrelscores:
+                fields[f'Run1 {metric_name}'] = qid2qrelscores[query.query_id][0]
+                fields[f'Run2 {metric_name}'] = qid2qrelscores[query.query_id][1]
             qrels_for_query = qrels.get(query.query_id, {})
             run_1_for_query = []
             for rank, (doc_id, score) in enumerate(run_1[query.query_id].items()):
@@ -298,10 +301,10 @@ class MainTask:
         assert dataset.has_queries()
         # TODO: handle the case without qrels
         assert dataset.has_queries()
-
-        diff_queries, qid2diff, metric_name = self.measure.query_differences(run_1, run_2, dataset=dataset)
+        diff_queries, qid2diff, metric_name, qid2qrelscores = self.measure.query_differences(run_1, run_2, dataset=dataset)
+        diff_queries, qid2diff, metric_name, qid2qrelscores = self.measure.query_differences(run_1, run_2, dataset=dataset)
         # _logger.info(diff_queries)
-        diff_query_objects = self.create_query_objects(run_1, run_2, diff_queries, qid2diff, metric_name, dataset)
+        diff_query_objects = self.create_query_objects(run_1, run_2, diff_queries, qid2diff, metric_name, dataset, qid2qrelscores=qid2qrelscores)
         doc_objects = self.create_doc_objects(diff_query_objects, dataset)
 
         return json.dumps(

@@ -152,4 +152,4 @@ class TopkMeasure(Measure):
         qids = sorted(qids, key=lambda x: id2measure[x])
         qids = qids[:topk]
         id2measure = {idx: id2measure[idx] for idx in qids}
-        return qids, id2measure, metric
+        return qids, id2measure, metric, None
