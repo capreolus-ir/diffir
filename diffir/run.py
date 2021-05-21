@@ -19,32 +19,13 @@ _logger = ir_datasets.log.easy()
 
 
 def main():
-    help = """
-            Usage:
-              run.py RUN1 RUN2 [options] [([with] CONFIG...)]
-              run.py (-h | --help)
-
-
-            Options:
-              -c --cli                      CLI mode (default)
-              -w --web                      webui mode
-              -h --help                     Print this help message and exit.
-
-
-            Arguments:
-              RUN1      First run file to compare
-              RUN2      Second run file to compare
-              CONFIG    Configuration assignments of the form foo.bar=17
-
-           """
-
     parser = argparse.ArgumentParser()
-    parser.add_argument("runfiles", nargs="+")
-    parser.add_argument("-c", "--cli", dest="cli", action="store_true")
-    parser.add_argument("-w", "--web", dest="web", action="store_true")
-    parser.add_argument("--dataset", dest="dataset", type=str)
-    parser.add_argument("--measure", dest="measure", type=str, default="tauap")
-    parser.add_argument("--metric", dest="metric", type=str, default="MAP")
+    parser.add_argument("runfiles", nargs="+", help="run files to compare")
+    parser.add_argument("-c", "--cli", dest="cli", action="store_true", help="CLI mode (default)")
+    parser.add_argument("-w", "--web", dest="web", action="store_true", help="webui mode")
+    parser.add_argument("--dataset", dest="dataset", type=str, help="dataset from ir_datasets")
+    parser.add_argument("--measure", dest="measure", type=str, default="tauap", help="measure for ranking difference (qrel, tauap,weightedtau)")
+    parser.add_argument("--metric", dest="metric", type=str, default="MAP", help="metric used with qrel measure")
     parser.add_argument("--topk", dest="topk", type=int, default=10)
     parser.add_argument("--weights_1", dest="weights_1", type=str, default=None, required=False)
     parser.add_argument("--weights_2", dest="weights_2", type=str, default=None, required=False)
