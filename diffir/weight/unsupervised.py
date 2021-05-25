@@ -12,7 +12,7 @@ class ExactMatchWeight(Weight):
 
     def __init__(self, queryfield="", skip_stopwords=True):
         self.queryfield = queryfield
-        self.skip_stopwords = True
+        self.skip_stopwords = skip_stopwords
 
     def fast_score_document_regions(self, query, doc, run_idx):
         """
