@@ -20,19 +20,20 @@ _logger = ir_datasets.log.easy()
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("runfiles", nargs="+", help="run files to compare")
-    parser.add_argument("-c", "--cli", dest="cli", action="store_true", help="CLI mode (default)")
-    parser.add_argument("-w", "--web", dest="web", action="store_true", help="webui mode")
-    parser.add_argument("--dataset", dest="dataset", type=str, help="dataset from ir_datasets")
-    parser.add_argument("--measure", dest="measure", type=str, default="tauap", help="measure for ranking difference (qrel, tauap,weightedtau)")
-    parser.add_argument("--metric", dest="metric", type=str, default="MAP", help="metric used with qrel measure")
-    parser.add_argument("--topk", dest="topk", type=int, default=10)
+    parser.add_argument("runfiles", nargs="+", help="run file(s) to display and compare")
+    parser.add_argument("-c", "--cli", dest="cli", action="store_true", help="output to CLI (default)")
+    parser.add_argument("-w", "--web", dest="web", action="store_true", help="output HTML file for WebUI")
+    parser.add_argument("--dataset", dest="dataset", type=str, required=True, help="dataset identifier from ir_datasets")
+    parser.add_argument("--measure", dest="measure", type=str, default="tauap", help="measure for ranking difference (qrel, tauap, weightedtau)")
+    parser.add_argument("--metric", dest="metric", type=str, default="nDCG@10", help="metric to report and used with qrel measure")
+    parser.add_argument("--topk", dest="topk", type=int, default=50, help="number of queries to compare")
     parser.add_argument("--weights_1", dest="weights_1", type=str, default=None, required=False)
     parser.add_argument("--weights_2", dest="weights_2", type=str, default=None, required=False)
-    # parser.add_argument("--config", dest="config", nargs="*")
     args = parser.parse_args()
     config = {"dataset": args.dataset, "measure": args.measure, "metric": args.metric, "topk": args.topk,
                 "weight": {"weights_1": args.weights_1, "weights_2": args.weights_2}}
+    if not (args.cli or args.web):
+        args.cli = True  # default
     diff(args.runfiles, config, cli=args.cli, web=args.web)
 
 
