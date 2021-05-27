@@ -1,31 +1,29 @@
 import json
-from intervaltree import IntervalTree
-from nltk import word_tokenize
-from nltk.corpus import stopwords
-from profane import ModuleBase, Dependency, ConfigOption
 import ir_datasets
 from . import Weight
-
 
 _logger = ir_datasets.log.easy()
 
 
-@Weight.register
 class CustomWeight(Weight):
     module_name = "custom"
-    config_spec = [
-        # TODO: is there a better way to handle these args? There's strlist, but that's ugly for file paths.
-        # Maybe we could infer them if they are named with the run prefix? Can we get the run paths here?
-        ConfigOption(key="weights_1", default_value=None, description="TODO"),
-        ConfigOption(key="norm_1", default_value="minmax", description="TODO"),
-        ConfigOption(key="weights_2", default_value=None, description="TODO"),
-        ConfigOption(key="norm_2", default_value="minmax", description="TODO"),
-    ]
+
+    def __init__(self, weights_1, weights_2, norm_1="minmax", norm_2="minmax"):
+        '''
+        Customed weights file from ranking models
+        :param weights_1:
+        :param weights_2:
+        :param norm_1:
+        :param norm_2:
+        '''
+        self.weights = [weights_1, weights_2]
+        self.norms = [norm_1, norm_2]
+        self.build()
 
     def build(self):
         self._cache = {}
         for run_idx in [0, 1]:
-            weights_file, norm = self.config[f"weights_{run_idx+1}"], self.config[f"norm_{run_idx+1}"]
+            weights_file, norm = self.weights[run_idx], self.norms[run_idx]
             if weights_file is None:
                 _logger.warn(f"missing weights.weights_{run_idx + 1}")
                 self._cache[run_idx] = {}

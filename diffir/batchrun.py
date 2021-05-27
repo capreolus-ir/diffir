@@ -29,9 +29,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("directory")
     parser.add_argument("-o", "--output", dest="output_dir")
-    parser.add_argument("--config", dest="config", nargs="*")
-
+    parser.add_argument("--dataset", dest="dataset", type=str, help="dataset from ir_datasets")
+    parser.add_argument("--measure", dest="measure", type=str, default="tauap", help="measure for ranking difference (qrel, tauap,weightedtau)")
+    parser.add_argument("--metric", dest="metric", type=str, default="MAP", help="metric used with qrel measure")
+    parser.add_argument("--topk", dest="topk", type=int, default=10)
     args = parser.parse_args()
+    config = {"dataset": args.dataset, "measure": args.measure, "metric": args.metric, "topk": args.topk,
+                "weight": {"weights_1": None, "weights_2": None}}
     indir = Path(args.directory)
     output = Path(args.output_dir) if args.output_dir else indir / "diffir"
     output.mkdir(exist_ok=True)
@@ -50,7 +54,7 @@ def main():
 
     single_runs = sorted(single_runs)  # sorted needed for itertools ordering
     queue = [(fn,) for fn in single_runs] + list(itertools.combinations(single_runs, 2))
-    f = partial(process_runs, config=args.config, output=output)
+    f = partial(process_runs, config=config, output=output)
     with multiprocessing.Pool(8) as p:
         outdirs = p.map(f, queue)
 

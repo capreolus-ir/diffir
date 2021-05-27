@@ -3,20 +3,16 @@ import nltk
 from intervaltree import IntervalTree
 from nltk import word_tokenize
 from nltk.corpus import stopwords
-from profane import ModuleBase, Dependency, ConfigOption
 from . import Weight
 import ahocorasick
 
 
-@Weight.register
 class ExactMatchWeight(Weight):
     module_name = "exactmatch"
-    config_spec = [
-        ConfigOption(key="skip_stopwords", default_value=True, description="TODO"),
-        ConfigOption(
-            key="queryfield", default_value="", value_type="strlist", description="The query field that is used for highlighting"
-        ),
-    ]
+
+    def __init__(self, queryfield="", skip_stopwords=True):
+        self.queryfield = queryfield
+        self.skip_stopwords = skip_stopwords
 
     def fast_score_document_regions(self, query, doc, run_idx):
         """
@@ -35,7 +31,7 @@ class ExactMatchWeight(Weight):
         except LookupError:
             nltk.download("stopwords")
         result = {}
-        stops = stopwords.words("english") if self.config["skip_stopwords"] else None
+        stops = stopwords.words("english") if self.skip_stopwords else None
         query_tokens = set()
         for qfield_value in query:
             query_tokens.update(
@@ -59,7 +55,7 @@ class ExactMatchWeight(Weight):
         for field, values in list(result.items()):
             tree = IntervalTree()
             for start, stop in values:
-                tree[start : stop + 1] = 1
+                tree[start: stop + 1] = 1
             tree.merge_overlaps()
             result[field] = sorted([[i.begin, i.end, 1.0] for i in tree])
         return result
@@ -77,10 +73,10 @@ class ExactMatchWeight(Weight):
         except LookupError:
             nltk.download("stopwords")
         result = {}
-        stops = stopwords.words("english") if self.config["skip_stopwords"] else None
+        stops = stopwords.words("english") if self.skip_stopwords else None
 
         qfield_values = []
-        specified_qfields = list(filter(None, self.config["queryfield"]))
+        specified_qfields = list(filter(None, self.queryfield))
 
         # Choose a query field to do the highlighting with
         if specified_qfields:
@@ -104,7 +100,7 @@ class ExactMatchWeight(Weight):
                 if stops and word.lower() in stops:
                     continue
                 for dfield, dvalue in zip(doc._fields, doc):
-                    if not isinstance(dvalue, str):  # TODO: how to handle other field types (like the structured CORD19 docs)?
+                    if not isinstance(dvalue, str):
                         continue  # skip non-strings for now
                     if dfield not in result:
                         result[dfield] = []
