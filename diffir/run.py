@@ -68,8 +68,8 @@ class MainTask:
             self.measure = TopkMeasure("weightedtau", topk)
         elif measure == "spearmanr":
             self.measure = TopkMeasure("spearmanr", topk)
-        elif measure == "pearsonr":
-            self.measure = TopkMeasure("pearsonr", topk)
+        elif measure == "pearsonrank":
+            self.measure = TopkMeasure("pearsonrank", topk)
         elif measure == "kldiv":
             self.measure = TopkMeasure("kldiv", topk)
         else:
