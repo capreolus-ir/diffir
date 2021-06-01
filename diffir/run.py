@@ -68,8 +68,8 @@ class MainTask:
             self.measure = TopkMeasure("weightedtau", topk)
         elif measure == "spearmanr":
             self.measure = TopkMeasure("spearmanr", topk)
-        elif measure == "pearsonr":
-            self.measure = TopkMeasure("pearsonr", topk)
+        elif measure == "pearsonrank":
+            self.measure = TopkMeasure("pearsonrank", topk)
         elif measure == "kldiv":
             self.measure = TopkMeasure("kldiv", topk)
         else:
@@ -299,10 +299,8 @@ class MainTask:
 
         dataset = ir_datasets.load(self.dataset)
         assert dataset.has_docs()
-        assert dataset.has_queries()
         # TODO: handle the case without qrels
         assert dataset.has_queries()
-        diff_queries, qid2diff, metric_name, qid2qrelscores = self.measure.query_differences(run_1, run_2, dataset=dataset)
         diff_queries, qid2diff, metric_name, qid2qrelscores = self.measure.query_differences(run_1, run_2, dataset=dataset)
         # _logger.info(diff_queries)
         diff_query_objects = self.create_query_objects(run_1, run_2, diff_queries, qid2diff, metric_name, dataset, qid2qrelscores=qid2qrelscores)

@@ -141,7 +141,7 @@ class TopkMeasure(Measure):
                 tau = self.tauap_fast(union_score1, union_score2)
             elif metric == "spearmanr":
                 tau, p_value = stats.spearmanr(union_score1, union_score2)
-            elif metric == "pearsonr":
+            elif metric == "pearsonrank":
                 tau = (self.pearson_rank(union_score1, union_score2) + self.pearson_rank(union_score2,
                                                                                          union_score1)) / 2
             elif metric == "kldiv":

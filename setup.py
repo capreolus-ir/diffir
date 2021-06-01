@@ -33,13 +33,17 @@ setuptools.setup(
     url="https://github.com/capreolus-ir/diffir",
     packages=setuptools.find_packages(),
     install_requires=[
-        "profane>=0.2.3,<0.3",
+        "ir_measures>=0.1.4",
         "mako~=1.1",
         "ir_datasets>=0.3.1",
         "pytrec_eval>=0.5",
         "intervaltree>=3.1.0",
         "rich>=9.13.0",
         "pyahocorasick>=1.4.1",
+        "nltk>=3.5",
+        "numpy",
+        "scipy",
+        "pandas"
     ],
     classifiers=["Programming Language :: Python :: 3", "Operating System :: OS Independent"],
     python_requires=">=3.6",
