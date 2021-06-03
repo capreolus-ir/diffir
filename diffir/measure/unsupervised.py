@@ -138,7 +138,7 @@ class TopkMeasure(Measure):
             if metric == "weightedtau":
                 tau, p_value = stats.weightedtau(union_score1, union_score2)
             elif metric == "tauap":
-                tau = self.tauap_fast(union_score1, union_score2)
+                tau = (self.tauap_fast(union_score1, union_score2) + self.tauap_fast(union_score2, union_score1))/2
             elif metric == "spearmanr":
                 tau, p_value = stats.spearmanr(union_score1, union_score2)
             elif metric == "pearsonrank":
