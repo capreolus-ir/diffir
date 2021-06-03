@@ -147,6 +147,33 @@
       background: transparent !important;
       font-weight: normal;
     }
+    .styled-table {
+    border-collapse: collapse;    
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 400px;
+    /* box-shadow: 0 0 20px rgba(0, 0, 0, 0.15); */
+    }
+    .styled-table thead tr {
+    /* background-color: #009879; */
+    /* color: #ffffff; */
+    text-align: left;
+    }    
+    .styled-table th,
+    .styled-table td {
+      padding: 12px 15px;
+    }    
+    .styled-table tbody tr {
+    border-bottom: 1px solid #dddddd;
+    }
+
+    .styled-table tbody tr:nth-of-type(even) {
+      background-color: #f3f3f3;
+  }
+
+  .styled-table tbody tr:last-of-type {
+    border-bottom: 2px solid #009879;
+  }
   </style>
 </head>
 
@@ -422,10 +449,17 @@
           allWeightsA = {}
           generateDocListSingleView(query.run_1, "#docList", allWeightsA);
         } else {
+          var $metricsTable = $('<table class="styled-table" align="center"></table>').appendTo($query);
+          $("<thead> <tr> <th>Metric</th> <th>Run1</th> <th>Run2</th></tr></thead>").appendTo($metricsTable);
+          $.each(query.metrics, function(metric_name, metric_value){
+            $('<tr class="row"></tr>').append($('<th></th>').text(metric_name))
+            .append($('<td></td>').text(metric_value[0]))
+            .append($('<td></td>').text(metric_value[1])).appendTo($metricsTable)
+          });
           allWeightsA = {};
-          allWeightsB = {};
+          allWeightsB = {};          
           generateDocList(query.run_1, query.run_2, '#Run1Docs', 'right', allWeightsA);
-          generateDocList(query.run_2, query.run_1, '#Run2Docs', 'left', allWeightsB);
+          generateDocList(query.run_2, query.run_1, '#Run2Docs', 'left', allWeightsB);          
         }
       }
       var extraFields = $("#Query").find("tr").slice(2).attr("class", "query_collapse collapse");
