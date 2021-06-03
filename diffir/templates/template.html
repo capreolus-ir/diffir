@@ -148,32 +148,35 @@
       font-weight: normal;
     }
     .styled-table {
-    border-collapse: collapse;    
-    font-size: 0.9em;
-    font-family: sans-serif;
-    min-width: 400px;
-    /* box-shadow: 0 0 20px rgba(0, 0, 0, 0.15); */
+      margin-left: 90px;
+      margin-top: 10px;
+      border-collapse: collapse;    
+      font-size: 0.9em;
+      /* font-family: sans-serif; */
+      min-width: 400px;
+      /* box-shadow: 0 0 20px rgba(0, 0, 0, 0.15); */
     }
     .styled-table thead tr {
-    /* background-color: #009879; */
-    /* color: #ffffff; */
-    text-align: left;
+      background-color: #17a2b8;
+      color: #ffffff;
+      text-align: left;
     }    
-    .styled-table th,
+    /* .styled-table th, */
     .styled-table td {
-      padding: 12px 15px;
+      /* padding: 12px 15px; */
+      text-align: center;
     }    
     .styled-table tbody tr {
-    border-bottom: 1px solid #dddddd;
+      border-bottom: 1px solid #dddddd;
     }
 
     .styled-table tbody tr:nth-of-type(even) {
       background-color: #f3f3f3;
-  }
+    }
 
-  .styled-table tbody tr:last-of-type {
-    border-bottom: 2px solid #009879;
-  }
+    .styled-table tbody tr:last-of-type {
+      border-bottom: 2px solid #009879;
+    }
   </style>
 </head>
 
@@ -437,7 +440,7 @@
       if (query.length > 0) {
         query = query[0];
         $.each(query.fields, function (fname, fvalue) {
-          if (fname == "metric"){
+          if (fname == "contrast"){
             fvalue = fvalue.name +": " + fvalue.value;
           }
           $('<tr></tr>')
@@ -446,15 +449,20 @@
             .appendTo($table);
         });
         if (singleRunView) {
+          $.each(query.metrics, function(metric_name, metric_value){
+            $('<tr class="row"></tr>').append($('<th></th>').text(metric_name))
+            .append($('<td></td>').text(metric_value[0].toFixed(3)))
+            .appendTo($table)
+          });
           allWeightsA = {}
           generateDocListSingleView(query.run_1, "#docList", allWeightsA);
         } else {
           var $metricsTable = $('<table class="styled-table" align="center"></table>').appendTo($query);
-          $("<thead> <tr> <th>Metric</th> <th>Run1</th> <th>Run2</th></tr></thead>").appendTo($metricsTable);
+          $("<thead> <tr> <th>Metric</th> <td>Run1</td> <td>Run2</td></tr></thead>").appendTo($metricsTable);
           $.each(query.metrics, function(metric_name, metric_value){
             $('<tr class="row"></tr>').append($('<th></th>').text(metric_name))
-            .append($('<td></td>').text(metric_value[0]))
-            .append($('<td></td>').text(metric_value[1])).appendTo($metricsTable)
+            .append($('<td></td>').text(metric_value[0].toFixed(3)))
+            .append($('<td></td>').text(metric_value[1].toFixed(3))).appendTo($metricsTable)
           });
           allWeightsA = {};
           allWeightsB = {};          
@@ -600,7 +608,7 @@
       });
       $.each(data.queries, function (_, query) {
         if (!singleRunView){
-          $('<option>').attr('value', query['fields']['query_id']).attr("data-tokens", query.fields.query_id + " " + query.fields[queryDisplayField]).attr('data-subtext', query.fields.metric.name+': '+query.fields.metric.value.toFixed(5)).text(query.fields[queryDisplayField]).appendTo($select);
+          $('<option>').attr('value', query['fields']['query_id']).attr("data-tokens", query.fields.query_id + " " + query.fields[queryDisplayField]).attr('data-subtext', query.fields.contrast.name+': '+query.fields.contrast.value.toFixed(5)).text(query.fields[queryDisplayField]).appendTo($select);
         } else {
           $('<option>').attr('value', query['fields']['query_id']).text(query.fields[queryDisplayField]).appendTo($select);
         }

@@ -11,7 +11,8 @@ from rich.table import Table
 from rich.prompt import Confirm
 from rich.panel import Panel
 import ir_datasets
-
+from ir_measures import iter_calc
+from ir_measures import P, nDCG
 from diffir import QrelMeasure, TopkMeasure, WeightBuilder
 from diffir.utils import load_trec_run
 
@@ -102,7 +103,13 @@ class MainTask:
         """
         assert dataset.has_qrels(), "Cannot determine whether the doc is relevant - need qrels"
         qrels = dataset.qrels_dict()
-
+        run1_metrics = defaultdict(dict)
+        for metrics in iter_calc([P@1, P@3, P@5, P@10, nDCG@1, nDCG@3, nDCG@5, nDCG@10], qrels, run_1):
+            run1_metrics[metrics.query_id][str(metrics.measure)] = metrics.value
+        if run_2:
+            run2_metrics = defaultdict(dict)
+            for metrics in iter_calc([P@1, P@3, P@5, P@10, nDCG@1, nDCG@3, nDCG@5, nDCG@10], qrels, run_2):
+                run2_metrics[metrics.query_id][str(metrics.measure)] = metrics.value
         docstore = dataset.docs_store()
 
         qids_set = set(qids)  # Sets do O(1) lookups
@@ -119,7 +126,7 @@ class MainTask:
             )
 
             fields = query._asdict()
-            fields["metric"] = {"name": metric_name, "value": qid2diff[query.query_id]}
+            fields["contrast"] = {"name": metric_name, "value": qid2diff[query.query_id]}
             if qid2qrelscores:
                 fields[f'Run1 {metric_name}'] = qid2qrelscores[query.query_id][0]
                 fields[f'Run2 {metric_name}'] = qid2qrelscores[query.query_id][1]
@@ -162,8 +169,9 @@ class MainTask:
 
             qid2object[query.query_id] = {
                 "fields": fields,
-                "metrics": {"P@1": [1, 2], "P@3": [1, 2], "P@5": [1, 2], "P@10": [1, 2],
-                            "nDCG@1": [1, 2], "nDCG@3": [1, 2], "nDCG@5": [1, 2], "nDCG@10": [1, 2]},
+                "metrics": {metric: [run1_metrics[query.query_id][metric], run2_metrics[query.query_id][metric]] if run_2 else [run1_metrics[query.query_id][metric]]
+                            for metric in ["P@1", "P@3", "P@5", "P@10", "nDCG@1", "nDCG@3", "nDCG@5", "nDCG@10"]
+                            },
                 "run_1": run_1_for_query,
                 "run_2": run_2_for_query,
                 "mergedWeights": self.merge_weights(run_1_for_query, run_2_for_query),
