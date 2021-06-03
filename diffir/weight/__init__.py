@@ -1,3 +1,3 @@
 class Weight:
-    def score_document_regions(self, query, doc, run_idx):
+    def score_document_regions(self, query, doc):
         raise NotImplementedError()

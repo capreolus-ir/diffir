@@ -6,3 +6,4 @@ from diffir.weight.unsupervised import ExactMatchWeight
 from diffir.measure import Measure
 from diffir.measure.qrels import QrelMeasure
 from diffir.measure.unsupervised import TopkMeasure
+from diffir.weight.weights_builder import WeightBuilder

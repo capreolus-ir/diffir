@@ -12,7 +12,7 @@ from rich.prompt import Confirm
 from rich.panel import Panel
 import ir_datasets
 
-from diffir import QrelMeasure, TopkMeasure, CustomWeight, ExactMatchWeight
+from diffir import QrelMeasure, TopkMeasure, WeightBuilder
 from diffir.utils import load_trec_run
 
 _logger = ir_datasets.log.easy()
@@ -43,6 +43,8 @@ def diff(runs, config, cli, web, print_html=True):
             if os.path.exists(run + ".diffir"):
                 _logger.info("Found weight file at {}".format(run+".diffir"))
                 config["weight"][f"weights_{i + 1}"] = run + ".diffir"
+            else:
+                _logger.info("No weight file for {}. Fall to exact matching".format(run))
     task = MainTask(**config)
     if cli:
         task.cli(runs)
@@ -62,22 +64,12 @@ class MainTask:
         self.queries = queries
         if measure == "qrel":
             self.measure = QrelMeasure(metric, topk)
-        elif measure == "tauap":
-            self.measure = TopkMeasure("tauap", topk)
-        elif measure == "weightedtau":
-            self.measure = TopkMeasure("weightedtau", topk)
-        elif measure == "spearmanr":
-            self.measure = TopkMeasure("spearmanr", topk)
-        elif measure == "pearsonrank":
-            self.measure = TopkMeasure("pearsonrank", topk)
-        elif measure == "kldiv":
-            self.measure = TopkMeasure("kldiv", topk)
+        elif measure in ["tauap", "weightedtau", "spearmanr", "pearsonrank", "kldiv"]:
+            self.measure = TopkMeasure(measure, topk)
         else:
             raise ValueError("Measure {} is not supported".format(measure))
-        if weight["weights_1"] or weight["weights_2"]:
-            self.weight = CustomWeight(weight["weights_1"], weight["weights_2"])
-        else:
-            self.weight = ExactMatchWeight()
+
+        self.weight = WeightBuilder(weight["weights_1"], weight["weights_2"])
 
     def create_query_objects(self, run_1, run_2, qids, qid2diff, metric_name, dataset, qid2qrelscores=None):
         """
@@ -313,7 +305,7 @@ class MainTask:
                     "run2_name": run_2_fn,
                     "dataset": self.dataset,
                     "measure": self.measure.module_name,
-                    "weight": self.weight.module_name,
+                    # "weight": self.weight.module_name,
                     "qrelDefs": dataset.qrels_defs(),
                     "queryFields": dataset.queries_cls()._fields,
                     "docFields": dataset.docs_cls()._fields,
