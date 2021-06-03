@@ -71,6 +71,9 @@ class MainTask:
 
         self.weight = WeightBuilder(weight["weights_1"], weight["weights_2"])
 
+    def compute_qrel_metrics(self):
+        pass
+
     def create_query_objects(self, run_1, run_2, qids, qid2diff, metric_name, dataset, qid2qrelscores=None):
         """
         TODO: Need a better name
@@ -159,6 +162,8 @@ class MainTask:
 
             qid2object[query.query_id] = {
                 "fields": fields,
+                "metrics": {"P@1": [1, 2], "P@3": [1, 2], "P@5": [1, 2], "P@10": [1, 2],
+                            "nDCG@1": [1, 2], "nDCG@3": [1, 2], "nDCG@5": [1, 2], "nDCG@10": [1, 2]},
                 "run_1": run_1_for_query,
                 "run_2": run_2_for_query,
                 "mergedWeights": self.merge_weights(run_1_for_query, run_2_for_query),
