@@ -631,7 +631,7 @@
       });
       $.each(data.queries, function (_, query) {
         if (!singleRunView){
-          $('<option>').attr('value', query['fields']['query_id']).attr("data-tokens", query.fields.query_id + " " + query.fields[queryDisplayField]).attr('data-subtext', query.fields.contrast.name+': '+query.fields.contrast.value.toFixed(5)).text(query.fields[queryDisplayField]).appendTo($select);
+          $('<option>').attr('value', query['fields']['query_id']).attr("data-tokens", query.fields.query_id + " " + query.fields[queryDisplayField]).attr('data-subtext', query.fields.contrast.name+': '+query.fields.contrast.value.toFixed(3)).text(query.fields[queryDisplayField]).appendTo($select);
         } else {
           $('<option>').attr('value', query['fields']['query_id']).text(query.fields[queryDisplayField]).appendTo($select);
         }
