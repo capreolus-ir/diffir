@@ -177,6 +177,10 @@
     .styled-table tbody tr:last-of-type {
       border-bottom: 2px solid #009879;
     }
+
+    #ranking-summary ul li span {
+      margin-right: 5px;
+    }    
   </style>
 </head>
 
@@ -186,15 +190,14 @@
       <div class="container">
         <div class="row">
           <div class="col-sm-8 col-md-7 py-4">
-            <h6 class="text-white">About</h6>
-            <p class="text-muted">DiffIR is an open-source tool for exploring the contrast behaviors of information retrieval models. It was developed by 5 authors from Max Planck Institue for Informatics, Germany and University of Glasgow, UK.</p>
+            <h6 class="text-white">Summary</h6>
+            <p class="text-white" id="ranking-summary"></p>
           </div>
-          <div class="col-sm-4 offset-md-1 py-4">
-            <h6 class="text-white">Contact</h6>
+          <div class="col-sm-4 offset-md-1 py-4">            
             <ul class="list-unstyled">
-              <li><a href="#" class="text-white">Follow on Twitter</a></li>
-              <li><a href="#" class="text-white">Like on Facebook</a></li>
-              <li><a href="#" class="text-white">Email us</a></li>
+              <li><a href="#" class="text-white">Github</a></li>
+              <li><a href="#" class="text-white">Documentation</a></li>
+              <li><a href="#" class="text-white">Email</a></li>
             </ul>
           </div>
         </div>
@@ -249,7 +252,7 @@
       </div>
       <div id="Run2Docs" class="col">
       </div>
-    </div>
+    </div>    
   </div>
   <!-- Optional JavaScript -->
   <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -448,6 +451,16 @@
             .append($('<td></td>').text(fvalue))
             .appendTo($table);
         });
+        colors = ["badge-secondary", "badge-info", "badge-warning", "badge-primary"]
+        $summary = $("<ul></ul>")
+        $.each(query.summary, function(index, data){
+          $l=$("<li></li>");
+          $.each(data, function(idx, statement){
+            $("<span class='badge "+ colors[index] +"'></span>").text(statement).appendTo($l);
+          });
+          $summary.append($l);
+        });
+        $("#ranking-summary").empty().append($summary)
         if (singleRunView) {
           $.each(query.metrics, function(metric_name, metric_value){
             $('<tr class="row"></tr>').append($('<th></th>').text(metric_name))
