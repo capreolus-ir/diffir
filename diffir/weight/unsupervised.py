@@ -7,6 +7,7 @@ from . import Weight
 import ahocorasick
 
 
+
 class ExactMatchWeight(Weight):
     module_name = "exactmatch"
 
@@ -14,7 +15,7 @@ class ExactMatchWeight(Weight):
         self.queryfield = queryfield
         self.skip_stopwords = skip_stopwords
 
-    def fast_score_document_regions(self, query, doc, run_idx):
+    def fast_score_document_regions(self, query, doc):
         """
         Score document regions with Aho–Corasick_algorithm.
         :param query:
@@ -60,9 +61,9 @@ class ExactMatchWeight(Weight):
             result[field] = sorted([[i.begin, i.end, 1.0] for i in tree])
         return result
 
-    def score_document_regions(self, query, doc, run_idx, fast=False):
+    def score_document_regions(self, query, doc, fast=False):
         if fast:
-            return self.fast_score_document_regions(query, doc, run_idx)
+            return self.fast_score_document_regions(query, doc)
 
         try:
             nltk.data.find("tokenizers/punkt")
@@ -77,7 +78,6 @@ class ExactMatchWeight(Weight):
 
         qfield_values = []
         specified_qfields = list(filter(None, self.queryfield))
-
         # Choose a query field to do the highlighting with
         if specified_qfields:
             for fname in specified_qfields:
@@ -91,7 +91,6 @@ class ExactMatchWeight(Weight):
                     break
 
         assert len(qfield_values)
-
         for qfield_value in qfield_values:
             for word in word_tokenize(qfield_value):
                 word = word.lower()
@@ -106,12 +105,10 @@ class ExactMatchWeight(Weight):
                         result[dfield] = []
                     for match in re.finditer("\\b" + re.escape(word) + "\\b", dvalue.lower()):
                         result[dfield].append([match.start(), match.end()])
-
         for field, values in list(result.items()):
             tree = IntervalTree()
             for start, stop in values:
                 tree[start:stop] = 1
             tree.merge_overlaps()
             result[field] = sorted([[i.begin, i.end, 1.0] for i in tree])
-
         return result

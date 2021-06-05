@@ -11,8 +11,9 @@ from rich.table import Table
 from rich.prompt import Confirm
 from rich.panel import Panel
 import ir_datasets
-
-from diffir import QrelMeasure, TopkMeasure, CustomWeight, ExactMatchWeight
+from ir_measures import iter_calc
+from ir_measures import P, nDCG
+from diffir import QrelMeasure, TopkMeasure, WeightBuilder
 from diffir.utils import load_trec_run
 
 _logger = ir_datasets.log.easy()
@@ -43,6 +44,8 @@ def diff(runs, config, cli, web, print_html=True):
             if os.path.exists(run + ".diffir"):
                 _logger.info("Found weight file at {}".format(run+".diffir"))
                 config["weight"][f"weights_{i + 1}"] = run + ".diffir"
+            else:
+                _logger.info("No weight file for {}. Fall to exact matching".format(run))
     task = MainTask(**config)
     if cli:
         task.cli(runs)
@@ -62,22 +65,15 @@ class MainTask:
         self.queries = queries
         if measure == "qrel":
             self.measure = QrelMeasure(metric, topk)
-        elif measure == "tauap":
-            self.measure = TopkMeasure("tauap", topk)
-        elif measure == "weightedtau":
-            self.measure = TopkMeasure("weightedtau", topk)
-        elif measure == "spearmanr":
-            self.measure = TopkMeasure("spearmanr", topk)
-        elif measure == "pearsonrank":
-            self.measure = TopkMeasure("pearsonrank", topk)
-        elif measure == "kldiv":
-            self.measure = TopkMeasure("kldiv", topk)
+        elif measure in ["tauap", "weightedtau", "spearmanr", "pearsonrank", "kldiv"]:
+            self.measure = TopkMeasure(measure, topk)
         else:
             raise ValueError("Measure {} is not supported".format(measure))
-        if weight["weights_1"] or weight["weights_2"]:
-            self.weight = CustomWeight(weight["weights_1"], weight["weights_2"])
-        else:
-            self.weight = ExactMatchWeight()
+
+        self.weight = WeightBuilder(weight["weights_1"], weight["weights_2"])
+
+    def compute_qrel_metrics(self):
+        pass
 
     def create_query_objects(self, run_1, run_2, qids, qid2diff, metric_name, dataset, qid2qrelscores=None):
         """
@@ -107,7 +103,13 @@ class MainTask:
         """
         assert dataset.has_qrels(), "Cannot determine whether the doc is relevant - need qrels"
         qrels = dataset.qrels_dict()
-
+        run1_metrics = defaultdict(dict)
+        for metrics in iter_calc([P@1, P@3, P@5, P@10, nDCG@1, nDCG@3, nDCG@5, nDCG@10], qrels, run_1):
+            run1_metrics[metrics.query_id][str(metrics.measure)] = metrics.value
+        if run_2:
+            run2_metrics = defaultdict(dict)
+            for metrics in iter_calc([P@1, P@3, P@5, P@10, nDCG@1, nDCG@3, nDCG@5, nDCG@10], qrels, run_2):
+                run2_metrics[metrics.query_id][str(metrics.measure)] = metrics.value
         docstore = dataset.docs_store()
 
         qids_set = set(qids)  # Sets do O(1) lookups
@@ -124,7 +126,7 @@ class MainTask:
             )
 
             fields = query._asdict()
-            fields["metric"] = {"name": metric_name, "value": qid2diff[query.query_id]}
+            fields["contrast"] = {"name": metric_name, "value": qid2diff[query.query_id]}
             if qid2qrelscores:
                 fields[f'Run1 {metric_name}'] = qid2qrelscores[query.query_id][0]
                 fields[f'Run2 {metric_name}'] = qid2qrelscores[query.query_id][1]
@@ -167,12 +169,97 @@ class MainTask:
 
             qid2object[query.query_id] = {
                 "fields": fields,
+                "metrics": {metric: [run1_metrics[query.query_id][metric], run2_metrics[query.query_id][metric]] if run_2 else [run1_metrics[query.query_id][metric]]
+                            for metric in ["P@1", "P@3", "P@5", "P@10", "nDCG@1", "nDCG@3", "nDCG@5", "nDCG@10"]
+                            },
                 "run_1": run_1_for_query,
                 "run_2": run_2_for_query,
+                "summary": self.create_summary(run_1_for_query, run_2_for_query),
                 "mergedWeights": self.merge_weights(run_1_for_query, run_2_for_query),
             }
 
         return [qid2object[id] for id in qids]
+
+    def create_summary(self, run1_ranked_docs, run2_ranked_docs):
+        summary = []
+        if len(run2_ranked_docs) == 0:
+            unjudged_count=0
+            for doc in run1_ranked_docs:
+                if doc["relevance"] is None:
+                    unjudged_count+=1
+            if unjudged_count >0:
+                summary.append(["{} unjudged doc(s) move to a top spot in the ranking".format(unjudged_count)])
+            return summary
+
+        run1_doc_map = {doc["doc_id"]: doc for doc in run1_ranked_docs}
+        run2_doc_map = {doc["doc_id"]: doc for doc in run2_ranked_docs}
+        not_ranked_in_run2 = 0
+        for doc_id in run1_doc_map:
+            if doc_id not in run2_doc_map:
+                not_ranked_in_run2 += 1
+        not_ranked_in_run1 = 0
+        for doc_id in run2_doc_map:
+            if doc_id not in run1_doc_map:
+                not_ranked_in_run1 += 1
+        not_ranks = []
+        if not_ranked_in_run2 > 0:
+            not_ranks.append("{} document(s) in run1 not ranked in run2".format(not_ranked_in_run2))
+        if not_ranked_in_run1 > 0:
+            not_ranks.append("{} document(s) in run2 not ranked in run1".format(not_ranked_in_run1))
+        summary.append(not_ranks)
+        moves = []
+        for doc_id in run1_doc_map:
+            if doc_id not in run2_doc_map:
+                continue
+            rank_in_1 = run1_doc_map[doc_id]["rank"]
+            rank_in_2 = run2_doc_map[doc_id]["rank"]
+            if rank_in_1 != rank_in_2:
+                moves.append(("#{} in run1 moves to #{} in run2".format(rank_in_1, rank_in_2), abs(rank_in_1-rank_in_2)))
+        moves = sorted(moves, key=lambda x: x[1], reverse=True)
+        if len(moves) > 0:
+            summary.append([move[0] for move in moves[:5]])
+        unjudged_run1 = 0
+        unjudged_run2 = 0
+        for doc_id in run1_doc_map:
+            if run1_doc_map[doc_id]["relevance"] is None and run1_doc_map[doc_id]["rank"] <= 10:
+                unjudged_run1+=1
+        for doc_id in run2_doc_map:
+            if run2_doc_map[doc_id]["relevance"] is None and run2_doc_map[doc_id]["rank"] <= 10:
+                unjudged_run2+=1
+        unjudged = []
+        if unjudged_run1 > 0:
+            unjudged.append("{} unjudged docs in run1 move to a top spot in the ranking".format(unjudged_run1))
+        if unjudged_run2 > 0:
+            unjudged.append("{} unjudged docs in run2 move to a top spot in the ranking".format(unjudged_run2))
+        summary.append(unjudged)
+        swap = 0
+        doc_ids = list(set(run1_doc_map.keys()).intersection(set(run2_doc_map.keys())))
+        for idx1 in range(len(doc_ids)):
+            for idx2 in range(idx1+1, len(doc_ids)):
+                if (run1_doc_map[doc_ids[idx1]]["rank"] - run1_doc_map[doc_ids[idx2]]["rank"])*(run2_doc_map[doc_ids[idx1]]["rank"] - run2_doc_map[doc_ids[idx2]]["rank"]) < 0:
+                    swap += 1
+        if swap > 0:
+            summary.append(["Number of relative rank reversals: {}".format(swap)])
+        return summary
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def merge_weights(self, run1_for_query, run_2_for_query):
         doc_id2weights = defaultdict(lambda: {"run1": defaultdict(lambda: []), "run2": defaultdict(lambda: [])})
@@ -313,7 +400,7 @@ class MainTask:
                     "run2_name": run_2_fn,
                     "dataset": self.dataset,
                     "measure": self.measure.module_name,
-                    "weight": self.weight.module_name,
+                    # "weight": self.weight.module_name,
                     "qrelDefs": dataset.qrels_defs(),
                     "queryFields": dataset.queries_cls()._fields,
                     "docFields": dataset.docs_cls()._fields,
