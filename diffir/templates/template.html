@@ -469,7 +469,7 @@
           $tbody = $("<tbody></tbody>");
           $.each(query.metrics, function(metric_name, metric_value){
             $('<tr></tr>').append($('<th></th>').text(metric_name))
-            .append($('<td></td>').text(metric_value[0].toFixed(3)))
+            .append($('<td></td>').text(metric_value[0]==null? "No" : metric_value[0].toFixed(3)))
             .appendTo($tbody)
           });
           $metricsTable.append($tbody);
@@ -482,8 +482,8 @@
           $tbody = $("<tbody></tbody>");
           $.each(query.metrics, function(metric_name, metric_value){
             $('<tr></tr>').append($('<th></th>').text(metric_name))
-            .append($('<td></td>').text(metric_value[0].toFixed(3)))
-            .append($('<td></td>').text(metric_value[1].toFixed(3))).appendTo($tbody)
+            .append($('<td></td>').text(metric_value[0] == null? "No" : metric_value[0].toFixed(3)))
+            .append($('<td></td>').textmetric_value[0] == null? "No" : (metric_value[1].toFixed(3))).appendTo($tbody)
           });
           $metricsTable.append($tbody);
           $("#metrics").empty().append($metricsTable);
