@@ -132,7 +132,7 @@ html_static_path = ["_static", "images"]
 # html_sidebars = {}
 
 # add logo
-#html_logo = "images/DiffIR-100px.png"
+# html_logo = "images/DiffIR-100px.png"
 
 # -- Options for HTMLHelp output ---------------------------------------------
 

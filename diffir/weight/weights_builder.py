@@ -15,4 +15,3 @@ class WeightBuilder:
 
     def score_document_regions(self, query, doc, run_idx):
         return self.weights[run_idx].score_document_regions(query, doc)
-
