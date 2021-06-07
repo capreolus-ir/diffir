@@ -9,16 +9,15 @@ class CustomWeight(Weight):
     module_name = "custom"
 
     def __init__(self, weights_file, norm="minmax"):
-        '''
+        """
         Customed weights file from the ranking model
         :param weights_file: weights_file extracted from the ranking model
         :param norm: approach to normalize weight        
-        '''
+        """
         self.weights_file = weights_file
         self.norm = norm
         self._cache = {}
         self.build()
-
 
     def build(self):
         with open(self.weights_file, "rt") as f:
@@ -44,6 +43,6 @@ class CustomWeight(Weight):
         else:
             raise ValueError(f"unknown norm {self.norm}")
 
-    def score_document_regions(self, query, doc):        
+    def score_document_regions(self, query, doc):
         result = self._cache.get(query.query_id, {}).get(doc.doc_id, {})
         return result

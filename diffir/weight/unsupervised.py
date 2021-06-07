@@ -7,7 +7,6 @@ from . import Weight
 import ahocorasick
 
 
-
 class ExactMatchWeight(Weight):
     module_name = "exactmatch"
 
@@ -56,7 +55,7 @@ class ExactMatchWeight(Weight):
         for field, values in list(result.items()):
             tree = IntervalTree()
             for start, stop in values:
-                tree[start: stop + 1] = 1
+                tree[start : stop + 1] = 1
             tree.merge_overlaps()
             result[field] = sorted([[i.begin, i.end, 1.0] for i in tree])
         return result
