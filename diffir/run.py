@@ -378,9 +378,8 @@ class MainTask:
         run_2 = load_trec_run(run_2_fn) if run_2_fn is not None else None
 
         dataset = ir_datasets.load(self.dataset)
-        assert dataset.has_docs()
-        # TODO: handle the case without qrels
-        assert dataset.has_queries()
+        assert dataset.has_docs(), "dataset has no documents; maybe you're missing a partition like '/trec-dl-2020'"
+        assert dataset.has_queries(), "dataset has no queries; maybe you're missing a partition like '/trec-dl-2020'"
         diff_queries, qid2diff, metric_name, qid2qrelscores = self.measure.query_differences(run_1, run_2, dataset=dataset)
         # _logger.info(diff_queries)
         diff_query_objects = self.create_query_objects(
