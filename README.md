@@ -43,3 +43,9 @@ where the run files are 1 or 2 positional arguments indicating the run files to 
 - `--metric <metric>`: the relevance metric to use with the qrel measure. Accepts [ir_measures](https://github.com/terrierteam/ir_measures) notation
 - `--topk <k>`: the number of queries to compare (as identified by the query contrast measure)
 - `--weights_1 <file>`, `--weights_2 <file>`: term importance files to use for snippet selection
+
+### Batch mode
+Use `diffir-batch` to generate comparison pages for every pair of run files in a directory.
+
+Usage: `diffir-batch <input directory> -o <output directory> <options>`
+where the `<options>` are those shown above.
