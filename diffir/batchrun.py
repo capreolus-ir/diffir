@@ -18,11 +18,11 @@ _logger = ir_datasets.log.easy()
 
 
 def process_runs(fns, config, output):
-    task_config, html = diff(fns, config, cli=False, web=True, print_html=False)    
-    if config["measure"] == "qrel":
-        outdir = output / f'{task_config["dataset"]}---measure___{task_config["measure"]}---metric___{task_config["metric"]}'
-    else:
-        outdir = output / f'{task_config["dataset"]}---measure___{task_config["measure"]}'
+    task_config, html = diff(fns, config, cli=False, web=True, print_html=False)
+
+    dataset_name = task_config["dataset"].replace("/", ".")
+    measure_name = task_config["measure"] if task_config["measure"] != "qrel" else "qrel." + task_config["metric"]
+    outdir = output / f"{dataset_name}---measure___{measure_name}"
     outdir.mkdir(exist_ok=True, parents=True)
 
     outfn = outdir / ("___".join(os.path.basename(x) for x in fns) + ".html")
@@ -30,6 +30,7 @@ def process_runs(fns, config, output):
         print(html, file=outf)
 
     return outdir
+
 
 def regenerate_landing_page(outdir):
     datasets = []
@@ -40,8 +41,10 @@ def regenerate_landing_page(outdir):
             continue
 
         dataset_name = dirname
-        configs =  dataset_name.split("---")
-        display_name = configs[0]+ ("" if len(configs)==1 else " (" + ",".join([c.replace("___",":") for c in configs[1:]]) + ")")
+        configs = dataset_name.split("---")
+        display_name = configs[0] + (
+            "" if len(configs) == 1 else " (" + ",".join([c.replace("___", ":") for c in configs[1:]]) + ")"
+        )
         name_dict[dataset_name] = display_name
         datasets.append(dataset_name)
 
@@ -54,7 +57,13 @@ def regenerate_landing_page(outdir):
 
     landing_template = env.get_template("landing.html")
     with open(os.path.join(outdir, "index.html"), "wt") as outf:
-        print(landing_template.render(datasets=datasets, name_dict=name_dict, runfiles=runfiles, rawdata=Markup(json.dumps(runfiles))), file=outf)
+        print(
+            landing_template.render(
+                datasets=datasets, name_dict=name_dict, runfiles=runfiles, rawdata=Markup(json.dumps(runfiles))
+            ),
+            file=outf,
+        )
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -100,7 +109,8 @@ def main():
         for run in sorted(single_runs):
             print(run.split("/")[-1], file=outf)
 
-    regenerate_landing_page(output) 
+    regenerate_landing_page(output)
+
 
 if __name__ == "__main__":
     main()
