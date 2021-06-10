@@ -230,13 +230,13 @@ u--gqAqrcNsilNKZjbm1y">Colab notebook</a>.
       let prev_dataset_name = $("a.dataset-tab.is-active").attr('data-dataset')
       let dataset_name = $(this).attr("data-dataset")
       // start of: Clear all effects applied `to runfiles in the previous tab
-      let $prev_selection_left = $("#runfiles-for-" + prev_dataset_name + "-left .runfile")
+      let $prev_selection_left = $("#" + $.escapeSelector("runfiles-for-" + prev_dataset_name + "-left") + " .runfile")
       $prev_selection_left.removeClass("is-active")
       $prev_selection_left.removeClass("disabled")
       $prev_selection_left.removeClass("other-side-disabled")
       $prev_selection_left.removeClass("search-excluded")
 
-      let $prev_selection_right = $("#runfiles-for-" + prev_dataset_name + "-right .runfile")
+      let $prev_selection_right = $("#" + $.escapeSelector("runfiles-for-" + prev_dataset_name + "-right")+" .runfile")
       $prev_selection_right.removeClass("is-active")
       $prev_selection_right.removeClass("disabled")
       $prev_selection_right.removeClass("other-side-disabled")
@@ -252,11 +252,11 @@ u--gqAqrcNsilNKZjbm1y">Colab notebook</a>.
 
 
       $(".panel-runfiles").removeClass("is-active")
-      $("#runfiles-for-" + dataset_name + "-left").addClass("is-active")
-      $("#runfiles-for-" + dataset_name + "-right").addClass("is-active")
+      $("#" + $.escapeSelector("runfiles-for-" + dataset_name + "-left")).addClass("is-active")
+      $("#" + $.escapeSelector("runfiles-for-" + dataset_name + "-right")).addClass("is-active")
 
       $(".dataset-tab").removeClass("is-active")
-      $("#tab-for-" + dataset_name).addClass("is-active")
+      $("#"+$.escapeSelector("tab-for-" + dataset_name)).addClass("is-active")
     });
 
     // When a runfile is clicked, select it, and disable clicking on other runfiles on the same side
@@ -337,7 +337,7 @@ u--gqAqrcNsilNKZjbm1y">Colab notebook</a>.
     function apply_search_results(dataset, side, results) {
       let search_results = new Set(results);
 
-      $("#runfiles-for-" + dataset +"-" + side + " .runfile").each(function(){
+      $("#"+ $.escapeSelector("runfiles-for-" + dataset +"-" + side) + " .runfile").each(function(){
         const runfile_name = $(this).attr("data-runfile");
 
         if(!search_results.has(runfile_name)){
