@@ -20,8 +20,8 @@ _logger = ir_datasets.log.easy()
 def process_runs(fns, config, output):
     task_config, html = diff(fns, config, cli=False, web=True, print_html=False)
 
-    dataset_name = task_config["dataset"].replace("/", ".")
-    measure_name = task_config["measure"] if task_config["measure"] != "qrel" else "qrel." + task_config["metric"]
+    dataset_name = task_config["dataset"].replace("/", "_")
+    measure_name = task_config["measure"] if task_config["measure"] != "qrel" else "qrel-" + task_config["metric"]
     outdir = output / f"{dataset_name}---measure___{measure_name}"
     outdir.mkdir(exist_ok=True, parents=True)
 
