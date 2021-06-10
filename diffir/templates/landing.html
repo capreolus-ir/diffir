@@ -144,7 +144,7 @@ u--gqAqrcNsilNKZjbm1y">Colab notebook</a>.
 
       <p id="tabs" class="panel-tabs">
         {% for dataset in datasets %}
-          <a id="tab-for-{{dataset}}" class="{% if loop.index < 2 %}is-active {% endif %} dataset-tab" data-dataset={{dataset}}>{{dataset}}</a>
+          <a id="tab-for-{{dataset}}" class="{% if loop.index < 2 %}is-active {% endif %} dataset-tab" data-dataset={{dataset}}>{{name_dict[dataset]}}</a>
         {% endfor %}
       </p>
 
@@ -229,7 +229,6 @@ u--gqAqrcNsilNKZjbm1y">Colab notebook</a>.
     $("a.dataset-tab").click(function(e){
       let prev_dataset_name = $("a.dataset-tab.is-active").attr('data-dataset')
       let dataset_name = $(this).attr("data-dataset")
-
       // start of: Clear all effects applied `to runfiles in the previous tab
       let $prev_selection_left = $("#runfiles-for-" + prev_dataset_name + "-left .runfile")
       $prev_selection_left.removeClass("is-active")
