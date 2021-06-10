@@ -113,11 +113,11 @@ class MainTask:
         assert dataset.has_qrels(), "Cannot determine whether the doc is relevant - need qrels"
         qrels = dataset.qrels_dict()
         run1_metrics = defaultdict(lambda: defaultdict(lambda: None))
-        for metrics in iter_calc([P @ 1, P @ 3, P @ 5, P @ 10, nDCG @ 1, nDCG @ 3, nDCG @ 5, nDCG @ 10], qrels, run_1):
+        for metrics in iter_calc([P@1, P@3, P@5, P@10, nDCG@1, nDCG@3, nDCG@5, nDCG@10], qrels, run_1):
             run1_metrics[metrics.query_id][str(metrics.measure)] = metrics.value
         if run_2:
             run2_metrics = defaultdict(lambda: defaultdict(lambda: None))
-            for metrics in iter_calc([P @ 1, P @ 3, P @ 5, P @ 10, nDCG @ 1, nDCG @ 3, nDCG @ 5, nDCG @ 10], qrels, run_2):
+            for metrics in iter_calc([P@1, P@3, P@5, P@10, nDCG@1, nDCG@3, nDCG@5, nDCG@10], qrels, run_2):
                 run2_metrics[metrics.query_id][str(metrics.measure)] = metrics.value
         docstore = dataset.docs_store()
         qids_set = set(qids)  # Sets do O(1) lookups
