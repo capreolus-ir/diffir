@@ -43,7 +43,7 @@ setuptools.setup(
         "nltk>=3.5",
         "numpy",
         "scipy",
-        "pandas"
+        "pandas",
     ],
     classifiers=["Programming Language :: Python :: 3", "Operating System :: OS Independent"],
     python_requires=">=3.6",

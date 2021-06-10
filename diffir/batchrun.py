@@ -61,12 +61,19 @@ def main():
     parser.add_argument("directory")
     parser.add_argument("-o", "--output", dest="output_dir")
     parser.add_argument("--dataset", dest="dataset", type=str, help="dataset from ir_datasets")
-    parser.add_argument("--measure", dest="measure", type=str, default="tauap", help="measure for ranking difference (qrel, tauap,weightedtau)")
+    parser.add_argument(
+        "--measure", dest="measure", type=str, default="tauap", help="measure for ranking difference (qrel, tauap,weightedtau)"
+    )
     parser.add_argument("--metric", dest="metric", type=str, default="MAP", help="metric used with qrel measure")
     parser.add_argument("--topk", dest="topk", type=int, default=10)
     args = parser.parse_args()
-    config = {"dataset": args.dataset, "measure": args.measure, "metric": args.metric, "topk": args.topk,
-                "weight": {"weights_1": None, "weights_2": None}}
+    config = {
+        "dataset": args.dataset,
+        "measure": args.measure,
+        "metric": args.metric,
+        "topk": args.topk,
+        "weight": {"weights_1": None, "weights_2": None},
+    }
     indir = Path(args.directory)
     output = Path(args.output_dir) if args.output_dir else indir / "diffir"
     output.mkdir(exist_ok=True)
