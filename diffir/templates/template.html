@@ -147,6 +147,40 @@
       background: transparent !important;
       font-weight: normal;
     }
+    .styled-table {
+      margin-left: 0px;
+      margin-top: 10px;
+      border-collapse: collapse;    
+      font-size: 0.9em;
+      /* font-family: sans-serif;       */
+      min-width: 350px;      
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+    }
+    .styled-table thead tr {
+      background-color: #17a2b8;
+      color: #ffffff;
+      text-align: left;
+    }    
+    /* .styled-table th, */
+    .styled-table td {
+      /* padding: 12px 15px; */
+      text-align: center;
+    }    
+    .styled-table tbody tr {
+      color: #ffffff;
+    }
+    /*
+    .styled-table tbody tr:nth-of-type(even) {
+      background-color: #f3f3f3;
+    } */
+
+    .styled-table tbody tr:last-of-type {
+      border-bottom: 2px solid #009879;
+    }
+
+    #ranking-summary ul li span {
+      margin-right: 5px;
+    }    
   </style>
 </head>
 
@@ -155,17 +189,16 @@
     <div class="collapse bg-dark" id="navbarHeader">
       <div class="container">
         <div class="row">
-          <div class="col-sm-8 col-md-7 py-4">
-            <h6 class="text-white">About</h6>
-            <p class="text-muted">DiffIR is an open-source tool for exploring the contrast behaviors of information retrieval models. It was developed by 5 authors from Max Planck Institue for Informatics, Germany and University of Glasgow, UK.</p>
+          <div class="col-sm-6 col-md-6 py-4">
+            <h6 class="text-white">Summary</h6>
+            <p class="text-white" id="ranking-summary"></p>
           </div>
-          <div class="col-sm-4 offset-md-1 py-4">
-            <h6 class="text-white">Contact</h6>
-            <ul class="list-unstyled">
-              <li><a href="#" class="text-white">Follow on Twitter</a></li>
-              <li><a href="#" class="text-white">Like on Facebook</a></li>
-              <li><a href="#" class="text-white">Email us</a></li>
-            </ul>
+          <div class="col-sm-5 col-md-5 py-4"> 
+            <h6 class="text-white">Ranking statistics</h6>                                   
+            <ul>
+              <li class="text-white"><span id="contrast-measure"></span></li>
+              <li class="text-white"> <span>Relevance metrics</span> <div id="metrics"></div></li>
+            </ul>                        
           </div>
         </div>
       </div>
@@ -219,7 +252,7 @@
       </div>
       <div id="Run2Docs" class="col">
       </div>
-    </div>
+    </div>    
   </div>
   <!-- Optional JavaScript -->
   <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -410,22 +443,54 @@
       if (query.length > 0) {
         query = query[0];
         $.each(query.fields, function (fname, fvalue) {
-          if (fname == "metric"){
-            fvalue = fvalue.name +": " + fvalue.value;
-          }
-          $('<tr></tr>')
+          if (fname == "contrast"){
+            fvalue = fvalue.name +" (" + fvalue.value.toFixed(3)+")";
+            $("#contrast-measure").text("Contrast measure: "+fvalue);
+          } else {
+            $('<tr></tr>')
             .append($('<th></th>').text(fname))
             .append($('<td></td>').text(fvalue))
             .appendTo($table);
+          }
         });
+        colors = ["badge-secondary", "badge-info", "badge-warning", "badge-primary"]
+        $summary = $("<ul></ul>")
+        $.each(query.summary, function(index, data){
+          $l=$("<li></li>");
+          $.each(data, function(idx, statement){
+            $("<span class='badge "+ colors[index] +"'></span>").text(statement).appendTo($l);
+          });
+          $summary.append($l);
+        });
+        $("#ranking-summary").empty().append($summary)
         if (singleRunView) {
+          var $metricsTable = $('<table class="styled-table" align="center"></table>')
+          $("<thead> <tr> <th>Metric</th> <td>Value</td>").appendTo($metricsTable);
+          $tbody = $("<tbody></tbody>");
+          $.each(query.metrics, function(metric_name, metric_value){
+            $('<tr></tr>').append($('<th></th>').text(metric_name))
+            .append($('<td></td>').text(metric_value[0]==null? "No" : metric_value[0].toFixed(3)))
+            .appendTo($tbody)
+          });
+          $metricsTable.append($tbody);
+          $("#metrics").empty().append($metricsTable);          
           allWeightsA = {}
           generateDocListSingleView(query.run_1, "#docList", allWeightsA);
         } else {
+          var $metricsTable = $('<table class="styled-table" align="center"></table>')
+          $("<thead> <tr> <th>Metric</th> <td>Run1</td> <td>Run2</td></tr></thead>").appendTo($metricsTable);
+          $tbody = $("<tbody></tbody>");
+          $.each(query.metrics, function(metric_name, metric_value){
+            $('<tr></tr>').append($('<th></th>').text(metric_name))
+            .append($('<td></td>').text(metric_value[0] == null? "No" : metric_value[0].toFixed(3)))
+            .append($('<td></td>').text(metric_value[1] == null? "No" : metric_value[1].toFixed(3))).appendTo($tbody)
+          });
+          $metricsTable.append($tbody);
+          $("#metrics").empty().append($metricsTable);
           allWeightsA = {};
-          allWeightsB = {};
+          allWeightsB = {};          
           generateDocList(query.run_1, query.run_2, '#Run1Docs', 'right', allWeightsA);
-          generateDocList(query.run_2, query.run_1, '#Run2Docs', 'left', allWeightsB);
+          generateDocList(query.run_2, query.run_1, '#Run2Docs', 'left', allWeightsB);          
         }
       }
       var extraFields = $("#Query").find("tr").slice(2).attr("class", "query_collapse collapse");
@@ -566,7 +631,7 @@
       });
       $.each(data.queries, function (_, query) {
         if (!singleRunView){
-          $('<option>').attr('value', query['fields']['query_id']).attr("data-tokens", query.fields.query_id + " " + query.fields[queryDisplayField]).attr('data-subtext', query.fields.metric.name+': '+query.fields.metric.value.toFixed(5)).text(query.fields[queryDisplayField]).appendTo($select);
+          $('<option>').attr('value', query['fields']['query_id']).attr("data-tokens", query.fields.query_id + " " + query.fields[queryDisplayField]).attr('data-subtext', query.fields.contrast.name+': '+query.fields.contrast.value.toFixed(3)).text(query.fields[queryDisplayField]).appendTo($select);
         } else {
           $('<option>').attr('value', query['fields']['query_id']).text(query.fields[queryDisplayField]).appendTo($select);
         }

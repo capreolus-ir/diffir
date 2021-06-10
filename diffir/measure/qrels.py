@@ -5,6 +5,7 @@ from diffir.measure import Measure
 
 class QrelMeasure(Measure):
     module_name = "qrel"
+
     def _query_differences(self, run1, run2, *args, **kwargs):
         """
         :param run1: TREC run. Has the format {qid: {docid: score}, ...}

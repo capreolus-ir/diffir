@@ -75,6 +75,7 @@ class TopkMeasure(Measure):
                 j += 1
                 k += 1
             return tauAP
+
         res = (2 - 2 * merge_sort(rx_ordered_by_ry) / (n - 1)) - 1
         return res
 
@@ -125,25 +126,24 @@ class TopkMeasure(Measure):
         id2measure = {}
         for qid in qids:
             from collections import defaultdict
+
             min_value = min(min(run1[qid].values()), min(run2[qid].values())) - 1e-5
             doc_score_1 = defaultdict(lambda: min_value, run1[qid])
             doc_score_2 = defaultdict(lambda: min_value, run2[qid])
             doc_ids_1 = doc_score_1.keys()
             doc_ids_2 = doc_score_2.keys()
             doc_ids_union = set(doc_ids_1).union(set(doc_ids_2))
-            doc_ids_union = sorted(list(doc_ids_union), key=lambda id: (doc_score_1[id] + doc_score_2[id]),
-                                   reverse=True)
+            doc_ids_union = sorted(list(doc_ids_union), key=lambda id: (doc_score_1[id] + doc_score_2[id]), reverse=True)
             union_score1 = [doc_score_1[doc_id] for doc_id in doc_ids_union]
             union_score2 = [doc_score_2[doc_id] for doc_id in doc_ids_union]
             if metric == "weightedtau":
                 tau, p_value = stats.weightedtau(union_score1, union_score2)
             elif metric == "tauap":
-                tau = self.tauap_fast(union_score1, union_score2)
+                tau = (self.tauap_fast(union_score1, union_score2) + self.tauap_fast(union_score2, union_score1)) / 2
             elif metric == "spearmanr":
                 tau, p_value = stats.spearmanr(union_score1, union_score2)
             elif metric == "pearsonrank":
-                tau = (self.pearson_rank(union_score1, union_score2) + self.pearson_rank(union_score2,
-                                                                                         union_score1)) / 2
+                tau = (self.pearson_rank(union_score1, union_score2) + self.pearson_rank(union_score2, union_score1)) / 2
             elif metric == "kldiv":
                 tau = self.kl_div(union_score1, union_score2)
             else:
