@@ -414,6 +414,7 @@ class MainTask:
 
     def render_snippet_for_cli(self, doc_id, snp, docs):
         snp_text = docs[doc_id][snp["field"]][snp["start"] : snp["stop"]]
+        snp_text = snp_text.replace("[", "")
         idx_change = 0
         for s, e, w in snp["weights"]:
             s = s + idx_change
@@ -525,9 +526,8 @@ class MainTask:
                 if not ans:
                     return
         else:
-            with console.pager():
-                for current_index in range(len(queries)):
-                    self.cli_display_one_query(console, queries[current_index], 0, None, docs, json_data["meta"]["run1_name"])
+            for current_index in range(len(queries)):
+                self.cli_display_one_query(console, queries[current_index], 0, None, docs, json_data["meta"]["run1_name"])
 
     def web(self, runs):
         json_data = self.json(*runs)
