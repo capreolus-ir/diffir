@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <link rel="icon"
-    href="https://previews.123rf.com/images/antonshaparenko/antonshaparenko2003/antonshaparenko200300235/143437440-information-retrieval-icon-simple-element-from-business-intelligence-collection-filled-information-r.jpg">
+    href="https://raw.githubusercontent.com/capreolus-ir/diffir/master/docs/images/icon.png">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
@@ -118,21 +118,10 @@
       </div>
       <div class="panel-block">
         <p>
-        Welcome to diffir! Here you'll find some pre-generated run comparisons to explore.
-        You can also try creating diffir comparisons yourself with a <a href="https://colab.research.google.com/drive/1MrmY1lKa0Pr
-u--gqAqrcNsilNKZjbm1y">Colab notebook</a>.
+        Welcome to <a href="https://github.com/capreolus-ir/diffir">diffir</a>! You can choose one or two runs to view below.
+        This page was generated with diffir's batch run functionality using a command like:<br/>
+        <code> diffir-batch &lt;input directory&gt; -o &lt;output directory&gt; --dataset &lt;id&gt; --measure &lt;measure&gt; </code>
         </p>
-      </div>
-
-    </nav>
-
-    <nav class="panel">
-      <div class="panel-heading">
-        How-to
-      </div>
-      <div class="panel-block">
-        <div>You can generate these html files yourself by running ...</div>
-        <code>diffir run1 run2 -w measure.name=qrel > somefile.html</code>
       </div>
 
     </nav>
@@ -144,7 +133,7 @@ u--gqAqrcNsilNKZjbm1y">Colab notebook</a>.
 
       <p id="tabs" class="panel-tabs">
         {% for dataset in datasets %}
-          <a id="tab-for-{{dataset}}" class="{% if loop.index < 2 %}is-active {% endif %} dataset-tab" data-dataset={{dataset}}>{{dataset}}</a>
+          <a id="tab-for-{{dataset}}" class="{% if loop.index < 2 %}is-active {% endif %} dataset-tab" data-dataset={{dataset}}>{{name_dict[dataset]}}</a>
         {% endfor %}
       </p>
 
@@ -229,15 +218,14 @@ u--gqAqrcNsilNKZjbm1y">Colab notebook</a>.
     $("a.dataset-tab").click(function(e){
       let prev_dataset_name = $("a.dataset-tab.is-active").attr('data-dataset')
       let dataset_name = $(this).attr("data-dataset")
-
       // start of: Clear all effects applied `to runfiles in the previous tab
-      let $prev_selection_left = $("#runfiles-for-" + prev_dataset_name + "-left .runfile")
+      let $prev_selection_left = $("#" + $.escapeSelector("runfiles-for-" + prev_dataset_name + "-left") + " .runfile")
       $prev_selection_left.removeClass("is-active")
       $prev_selection_left.removeClass("disabled")
       $prev_selection_left.removeClass("other-side-disabled")
       $prev_selection_left.removeClass("search-excluded")
 
-      let $prev_selection_right = $("#runfiles-for-" + prev_dataset_name + "-right .runfile")
+      let $prev_selection_right = $("#" + $.escapeSelector("runfiles-for-" + prev_dataset_name + "-right")+" .runfile")
       $prev_selection_right.removeClass("is-active")
       $prev_selection_right.removeClass("disabled")
       $prev_selection_right.removeClass("other-side-disabled")
@@ -253,11 +241,11 @@ u--gqAqrcNsilNKZjbm1y">Colab notebook</a>.
 
 
       $(".panel-runfiles").removeClass("is-active")
-      $("#runfiles-for-" + dataset_name + "-left").addClass("is-active")
-      $("#runfiles-for-" + dataset_name + "-right").addClass("is-active")
+      $("#" + $.escapeSelector("runfiles-for-" + dataset_name + "-left")).addClass("is-active")
+      $("#" + $.escapeSelector("runfiles-for-" + dataset_name + "-right")).addClass("is-active")
 
       $(".dataset-tab").removeClass("is-active")
-      $("#tab-for-" + dataset_name).addClass("is-active")
+      $("#"+$.escapeSelector("tab-for-" + dataset_name)).addClass("is-active")
     });
 
     // When a runfile is clicked, select it, and disable clicking on other runfiles on the same side
@@ -338,7 +326,7 @@ u--gqAqrcNsilNKZjbm1y">Colab notebook</a>.
     function apply_search_results(dataset, side, results) {
       let search_results = new Set(results);
 
-      $("#runfiles-for-" + dataset +"-" + side + " .runfile").each(function(){
+      $("#"+ $.escapeSelector("runfiles-for-" + dataset +"-" + side) + " .runfile").each(function(){
         const runfile_name = $(this).attr("data-runfile");
 
         if(!search_results.has(runfile_name)){
