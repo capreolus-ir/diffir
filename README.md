@@ -10,7 +10,7 @@ DiffIR is a tool for visually 'diffing' the difference between two sets of ranki
 
 DiffIR supports multiple *query contrast meastures* for ranking comparison including unsupervised ranking correlations like TauAP and supervised comparison based on existing judgments. DiffIR additionally accepts term importance weights in order to highlight the terms most relevant to a model's relevance prediction.
 
-## Usage [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1MrmY1lKa0Pru--gqAqrcNsilNKZjbm1y/)
+## Usage [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1MrmY1lKa0Pru--gqAqrcNsilNKZjbm1y?usp=sharing)
 ### Installation
 Python 3 is required. Install via PyPI:
 
