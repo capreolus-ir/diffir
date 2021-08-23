@@ -345,8 +345,8 @@
           $text.prepend('...');
         }
         $text.prepend($('<span style="color: #999;"></span>').text(doc.snippet.field + ': '));
-        var newEl = $('<div></div>')
-          .append($('<div class="card"></div>')
+        var newEl = $('<div class="card" style="width:100%"></div>')
+          //.append($('<div class="card"></div>')
             .attr('data-docid', doc.doc_id)
             .attr('run1-rank', doc.rank)
             .append($('<div class="card-header"></div>')
@@ -359,8 +359,7 @@
               .append(' ')
               .append($score)
               .append($('<div class="snippet"></div>').append($text))
-            )
-          )
+            )          
           .appendTo(container);
       });
     }
