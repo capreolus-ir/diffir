@@ -34,6 +34,7 @@ def main():
     parser.add_argument("--topk", dest="topk", type=int, default=50, help="number of queries to compare")
     parser.add_argument("--weights_1", dest="weights_1", type=str, default=None, required=False)
     parser.add_argument("--weights_2", dest="weights_2", type=str, default=None, required=False)
+    parser.add_argument("--qfield", dest="qfield", type=str, default=None, required=False, help="Query field for exact matching")
     args = parser.parse_args()
     config = {
         "dataset": args.dataset,
@@ -41,6 +42,7 @@ def main():
         "metric": args.metric,
         "topk": args.topk,
         "weight": {"weights_1": args.weights_1, "weights_2": args.weights_2},
+        "qfields": [args.qfield] if args.qfield else []
     }
     if not (args.cli or args.web):
         args.cli = True  # default
@@ -69,17 +71,17 @@ class MainTask:
     module_type = "task"
     module_name = "main"
 
-    def __init__(self, dataset="none", queries="none", measure="topk", metric="weighted_tau", topk=3, weight={}):
+    def __init__(self, dataset="none", queries="none", measure="topk", metric="weighted_tau", topk=3, weight={}, qfields=[]):
         self.dataset = dataset
         self.queries = queries
+        self.qfields = qfields
         if measure == "qrel":
             self.measure = QrelMeasure(metric, topk)
         elif measure in ["tauap", "weightedtau", "spearmanr", "pearsonrank", "kldiv"]:
             self.measure = TopkMeasure(measure, topk)
         else:
             raise ValueError("Measure {} is not supported".format(measure))
-
-        self.weight = WeightBuilder(weight["weights_1"], weight["weights_2"])
+        self.weight = WeightBuilder(weight["weights_1"], weight["weights_2"], query_fields=qfields)
 
     def compute_qrel_metrics(self):
         pass
@@ -397,6 +399,7 @@ class MainTask:
                     # "weight": self.weight.module_name,
                     "qrelDefs": dataset.qrels_defs(),
                     "queryFields": dataset.queries_cls()._fields,
+                    "specified_qfield":self.qfields if self.qfields else "",
                     "docFields": dataset.docs_cls()._fields,
                     "relevanceColors": self.make_rel_colors(dataset),
                 },

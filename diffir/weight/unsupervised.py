@@ -10,8 +10,8 @@ import ahocorasick
 class ExactMatchWeight(Weight):
     module_name = "exactmatch"
 
-    def __init__(self, queryfield="", skip_stopwords=True):
-        self.queryfield = queryfield
+    def __init__(self, query_fields=[], skip_stopwords=True):
+        self.query_fields = query_fields
         self.skip_stopwords = skip_stopwords
 
     def fast_score_document_regions(self, query, doc):
@@ -76,7 +76,7 @@ class ExactMatchWeight(Weight):
         stops = stopwords.words("english") if self.skip_stopwords else None
 
         qfield_values = []
-        specified_qfields = list(filter(None, self.queryfield))
+        specified_qfields = list(filter(None, self.query_fields))
         # Choose a query field to do the highlighting with
         if specified_qfields:
             for fname in specified_qfields:
