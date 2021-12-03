@@ -80,11 +80,11 @@ class ExactMatchWeight(Weight):
         # Choose a query field to do the highlighting with
         if specified_qfields:
             for fname in specified_qfields:
-                qfield_values.append(query._asdict()[fname])
+                qfield_values.append(query[fname])
         else:
             # Use the first field in the query that is not the id
             # ._asdict() is an OrderedDict, so this is deterministic
-            for fname, fval in query._asdict().items():
+            for fname, fval in query.items():
                 if fname != "query_id":
                     qfield_values = [fval]
                     break
@@ -97,7 +97,7 @@ class ExactMatchWeight(Weight):
                     continue
                 if stops and word.lower() in stops:
                     continue
-                for dfield, dvalue in zip(doc._fields, doc):
+                for dfield, dvalue in doc.items():
                     if not isinstance(dvalue, str):
                         continue  # skip non-strings for now
                     if dfield not in result:
@@ -109,5 +109,5 @@ class ExactMatchWeight(Weight):
             for start, stop in values:
                 tree[start:stop] = 1
             tree.merge_overlaps()
-            result[field] = sorted([[i.begin, i.end, 1.0] for i in tree])
+            result[field] = sorted([[i.begin, i.end, 1.0] for i in tree])            
         return result

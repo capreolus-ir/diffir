@@ -36,7 +36,7 @@ class CustomWeight(Weight):
             for qid, docs in self._cache.items():
                 min_weight = min(w[2] for f in docs.values() for wts in f.values() for w in wts)
                 max_weight = max(w[2] for f in docs.values() for wts in f.values() for w in wts)
-                for fields in docs.values():
+                for fields in docs.values():                    
                     for weights in fields.values():
                         for weight in weights:
                             weight[2] = (weight[2] - min_weight) / (max_weight - min_weight)
@@ -44,5 +44,5 @@ class CustomWeight(Weight):
             raise ValueError(f"unknown norm {self.norm}")
 
     def score_document_regions(self, query, doc):
-        result = self._cache.get(query.query_id, {}).get(doc.doc_id, {})
+        result = self._cache.get(query["query_id"], {}).get(doc["doc_id"], {})
         return result

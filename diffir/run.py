@@ -15,9 +15,9 @@ from ir_measures import iter_calc
 from ir_measures import P, nDCG
 from diffir import QrelMeasure, TopkMeasure, WeightBuilder
 from diffir.utils import load_trec_run
+from typing import List, Dict, Callable
 
 _logger = ir_datasets.log.easy()
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -26,7 +26,7 @@ def main():
     parser.add_argument("-w", "--web", dest="web", action="store_true", help="output HTML file for WebUI")
     parser.add_argument("--dataset", dest="dataset", type=str, required=True, help="dataset identifier from ir_datasets")
     parser.add_argument(
-        "--measure", dest="measure", type=str, default="tauap", help="measure for ranking difference (qrel, tauap, weightedtau)"
+        "--measure", dest="measure", type=str, default="qrel", help="measure for ranking difference (qrel, tauap, weightedtau)"
     )
     parser.add_argument(
         "--metric", dest="metric", type=str, default="nDCG@10", help="metric to report and used with qrel measure"
@@ -34,7 +34,7 @@ def main():
     parser.add_argument("--topk", dest="topk", type=int, default=50, help="number of queries to compare")
     parser.add_argument("--weights_1", dest="weights_1", type=str, default=None, required=False)
     parser.add_argument("--weights_2", dest="weights_2", type=str, default=None, required=False)
-    parser.add_argument("--qfield", dest="qfield", type=str, default=None, required=False, help="Query field for exact matching")
+    parser.add_argument("--qfield_to_use", dest="qfield", type=str, default="", required=False, help="Query field for exact matching")
     args = parser.parse_args()
     config = {
         "dataset": args.dataset,
@@ -42,7 +42,7 @@ def main():
         "metric": args.metric,
         "topk": args.topk,
         "weight": {"weights_1": args.weights_1, "weights_2": args.weights_2},
-        "qfields": [args.qfield] if args.qfield else []
+        "qfield_to_use": args.qfield
     }
     if not (args.cli or args.web):
         args.cli = True  # default
@@ -57,6 +57,15 @@ def diff(runs, config, cli, web, print_html=True):
                 config["weight"][f"weights_{i + 1}"] = run + ".diffir"
             else:
                 _logger.info("No weight file for {}. Fall to exact matching".format(run))
+    _logger.info("Loading IR dataset")
+    dataset = ir_datasets.load(config["dataset"])    
+    config["qrels"] = dataset.qrels_dict()    
+    query_dict = {}
+    for query in dataset.queries_iter():
+        query_dict[query.query_id] = query._asdict()
+    config["queries"] = query_dict
+    config["doc_lookup_fnc"] = lambda x : dataset.docs_store().get(x)._asdict()
+    config["qrel_defs"] = dataset.qrels_defs()
     task = MainTask(**config)
     if cli:
         task.cli(runs)
@@ -66,38 +75,72 @@ def diff(runs, config, cli, web, print_html=True):
             print(html)
         return config, html
 
+def diff_html(runs: List, queries: List[Dict], doc_lookup_fnc: Callable[[], Dict], qrels: Dict, dataset: str ="none", measure="qrel", metric="nDCG@10", topk: int =3, weight: Dict = {"weights_1": None, "weights_2": None}, qrel_defs: Dict = None, qfield_to_use: str = "", relevance_level: int  = 1, num_doc: int = 10):
+    task = MainTask(queries, doc_lookup_fnc, qrels, dataset, measure, metric, topk, weight, qrel_defs, qfield_to_use, relevance_level, num_doc)
+    return task.web(runs)
 
 class MainTask:
-    module_type = "task"
-    module_name = "main"
 
-    def __init__(self, dataset="none", queries="none", measure="topk", metric="weighted_tau", topk=3, weight={}, qfields=[]):
+    def __init__(self, queries: List[Dict], doc_lookup_fnc: Callable[[], Dict], qrels: Dict, dataset: str ="none", measure="qrel", metric="nDCG@5", topk: int =3, weight: Dict = {}, qrel_defs: Dict =None, qfield_to_use: str = "", relevance_level: int  = 1, num_doc: int = 10):
         self.dataset = dataset
+        self.qrels = qrels        
         self.queries = queries
-        self.qfields = qfields
+        self.doc_lookup_func = doc_lookup_fnc
+        self.qfields = list(next(iter(self.queries.values())).keys())        
+        self.qfield_to_use = qfield_to_use
+        self.num_doc = num_doc
+        self.relevance_level = relevance_level
+        self.qrel_defs = qrel_defs
         if measure == "qrel":
             self.measure = QrelMeasure(metric, topk)
         elif measure in ["tauap", "weightedtau", "spearmanr", "pearsonrank", "kldiv"]:
             self.measure = TopkMeasure(measure, topk)
         else:
             raise ValueError("Measure {} is not supported".format(measure))
-        self.weight = WeightBuilder(weight["weights_1"], weight["weights_2"], query_fields=qfields)
-
-    def compute_qrel_metrics(self):
-        pass
-
-    def create_query_objects(self, run_1, run_2, qids, qid2diff, metric_name, dataset, qid2qrelscores=None):
+        #  query_fields=qfields
+        self.weight = WeightBuilder(weight["weights_1"], weight["weights_2"])
+    
+    def get_relevant_docids(self, qrels):
         """
-        TODO: Need a better name
-        This method takes in 2 runs and a set of qids, and constructs a dict for each qid (format specified below)
-        :param: run_1: TREC run of the format {qid: {docid: score}, ...}
-        :param: run_2: TREC run of the format {qid: {docid: score}, ...}
-        :param qids: A list of qids (strings)
-        :param dataset: Instance of an ir-datasets object
+        Return a dict that map each query id to a list of relevant docids
+        :param: qrels: Query relevance judgemebt
+        :return: A relevance dictionary
+        {qid: [doc_ids], ...}
+        """
+        relevant_docids = {}
+        for qid in qrels:
+            relevant_docids[qid] = []
+            for docid, rel  in qrels[qid].items():                
+                if rel > self.relevance_level: 
+                    relevant_docids[qid].append(docid)        
+        return relevant_docids
+
+    @staticmethod
+    def calculate_ranking_metrics(run, qrels):
+        """
+        Given a run and a qrels, calculate ranking metrics
+        :param: run: TREC run of the format {qid: {docid: score}, ...}
+        :param: qrels: Query relevance judgement of the format: #TODO: add format
+        :return: A dictionary of the format {qid: {measure: value}, ...}
+        """
+        run_metrics = defaultdict(lambda: defaultdict(lambda: None))
+        for metrics in iter_calc([P@1, P@3, P@5, P@10, nDCG@1, nDCG@3, nDCG@5, nDCG@10], qrels, run):
+            run_metrics[metrics.query_id][str(metrics.measure)] = metrics.value        
+        return run_metrics
+
+    def gather_query_differences(self, run1, run2, qids, qid2diff, metric_name, qid2qrelscores=None):
+        """
+        Given two runs, and a list of query ids, this function collection and aggreegate information for each query in both run.        
+        :param: run1: TREC run of the format {qid: {docid: score}, ...}
+        :param: run2: TREC run of the format {qid: {docid: score}, ...}
+        :param: qids: A list of query ids (strings) 
+        :param: qid2diff: A dict that map query id to a score telling the ranking difference between runs 
+        :param: metric_name: Name of the metric used to measure the difference
+        :param: qid2qrelscores: A dict formated as {qid: [run1_rel_score, run2_rel_score], ...}
         :return: A list of dicts. Each dict has the following format:
         {
             "fields": {"query_id": "qid", "title": "Title query", "desc": "Can be empty", ... everything else in ir-dataset query},
-            "run_1": [
+            "run1": [
                 {
                     "doc_id": "id of the doc",
                     "score": <score>,
@@ -109,97 +152,94 @@ class MainTask:
 
                 }
             ],
-            "run_2": <same format as run 1>
+            "run2": <same format as run 1>
         }
-        """
-        assert dataset.has_qrels(), "Cannot determine whether the doc is relevant - need qrels"
-        qrels = dataset.qrels_dict()
-        relevant_docids = {}
-        for qid in qrels:
-            relevant_docids[qid] = []
-            for docid, rel  in qrels[qid].items():
-                # TODO: allow users to define relevance
-                if rel > 0: 
-                    relevant_docids[qid].append(docid)
+        """              
+        relevant_docids = self.get_relevant_docids(self.qrels)
 
-        run1_metrics = defaultdict(lambda: defaultdict(lambda: None))
-        for metrics in iter_calc([P@1, P@3, P@5, P@10, nDCG@1, nDCG@3, nDCG@5, nDCG@10], qrels, run_1):
-            run1_metrics[metrics.query_id][str(metrics.measure)] = metrics.value
-        if run_2:
-            run2_metrics = defaultdict(lambda: defaultdict(lambda: None))
-            for metrics in iter_calc([P@1, P@3, P@5, P@10, nDCG@1, nDCG@3, nDCG@5, nDCG@10], qrels, run_2):
-                run2_metrics[metrics.query_id][str(metrics.measure)] = metrics.value
-        docstore = dataset.docs_store()
+        run1_metrics = self.calculate_ranking_metrics(run1, self.qrels)
+        
+        if run2:
+            run2_metrics = self.calculate_ranking_metrics(run2, self.qrels)
+
         qids_set = set(qids)  # Sets do O(1) lookups
-        qid2object = {}
-        for query in tqdm(dataset.queries_iter(), desc="analyzing queries"):
-            if query.query_id not in qids_set:
-                continue
+        qid2info = {}
+        
+        # each query should have be in a dict of {field: value, ...}, there should be a query_id field.
+        for qid in tqdm(qids_set, desc="analyzing queries"):            
+            if not qid in self.queries:
+                continue 
+            query = self.queries[qid]
+            # convert to dict if query is not a dict
+            if not isinstance(query, dict):                 
+                query = query._asdict()                
 
-            RESULT_COUNT = 10
-            doc_ids = (
-                set(list(run_1[query.query_id])[:RESULT_COUNT] + list(run_2[query.query_id])[:RESULT_COUNT] + relevant_docids[query.query_id])
-                if run_2
-                else set(list(run_1[query.query_id])[:RESULT_COUNT] + relevant_docids[query.query_id])
-            )
-
-            fields = query._asdict()
-            fields["contrast"] = {"name": metric_name, "value": qid2diff[query.query_id]}
+            # gather top documents in both runs with relevant documents
+            run1_doc_ids_to_display = set(list(run1[qid])[:self.num_doc] + relevant_docids[qid])
+            if run2:
+                run2_doc_ids_to_display =  set(list(run2[qid])[:self.num_doc] + relevant_docids[qid])           
+                all_doc_ids_to_display= run1_doc_ids_to_display.union(run2_doc_ids_to_display)
+            else:
+                all_doc_ids_to_display= run1_doc_ids_to_display
+                        
+            # add query contrast value
+            query["contrast"] = {"name": metric_name, "value": qid2diff[qid]}
             if qid2qrelscores:
-                fields[f"Run1 {metric_name}"] = qid2qrelscores[query.query_id][0]
-                fields[f"Run2 {metric_name}"] = qid2qrelscores[query.query_id][1]
-            qrels_for_query = qrels.get(query.query_id, {})
-            run_1_for_query = []
-            for rank, (doc_id, score) in enumerate(run_1[query.query_id].items()):
-                if doc_id not in doc_ids:
-                    continue
-                doc = docstore.get(doc_id)
-                weights = self.weight.score_document_regions(query, doc, 0)
-                run_1_for_query.append(
-                    {
-                        "doc_id": doc_id,
-                        "score": score,
-                        "relevance": qrels_for_query.get(doc_id),
-                        "rank": rank + 1,
-                        "weights": weights,
-                        "snippet": self.find_snippet(weights, doc),
-                    }
-                )
+                query[f"Run1 {metric_name}"] = qid2qrelscores[qid][0]
+                query[f"Run2 {metric_name}"] = qid2qrelscores[qid][1]
+            
+            # get jugdements for a specific query
+            qrels_for_a_query = self.qrels.get(qid, {})
 
-            run_2_for_query = []
+            # gather information to display for top documents
+            def collect_display_info_for_each_run(run, doc_ids_to_display, run_idx):                
+                if not isinstance(doc_ids_to_display, set):
+                    doc_ids_to_display = set(doc_ids_to_display)
+                info_to_display = []
+                default_field = None
+                for rank, (doc_id, score) in enumerate(run[qid].items()):
+                    if doc_id not in doc_ids_to_display:
+                        continue                     
+                    # get the weights for every tokens in the documents
+                    doc = self.doc_lookup_func(doc_id)
+                    weights = self.weight.score_document_regions(self.queries[qid], doc, run_idx)                                
+                    # get snippet to display
+                    if default_field == None:
+                        default_field = list(filter(lambda x: x != "doc_id", list(doc.keys())))[0]
+                    snippet = self.find_snippet(weights, default_field=default_field)
 
-            if run_2 is not None:
-                for rank, (doc_id, score) in enumerate(run_2[query.query_id].items()):
-                    if doc_id not in doc_ids:
-                        continue
-                    doc = docstore.get(doc_id)
-                    weights = self.weight.score_document_regions(query, doc, 1)
-                    run_2_for_query.append(
+                    info_to_display.append(
                         {
                             "doc_id": doc_id,
                             "score": score,
-                            "relevance": qrels_for_query.get(doc_id),
+                            "relevance": qrels_for_a_query.get(doc_id),
                             "rank": rank + 1,
-                            "weights": weights,
-                            "snippet": self.find_snippet(weights, doc),
+                            "weights": weights,                            
+                            "snippet": snippet,
                         }
                     )
+                return info_to_display
 
-            qid2object[query.query_id] = {
-                "fields": fields,
+            run1_to_display = collect_display_info_for_each_run(run1, run1_doc_ids_to_display, 0)
+            run2_to_display = []
+            if run2:
+                run2_to_display = collect_display_info_for_each_run(run2, run2_doc_ids_to_display, 1)
+
+            qid2info[qid] = {
+                "fields": query,
                 "metrics": {
-                    metric: [run1_metrics[query.query_id][metric], run2_metrics[query.query_id][metric]]
-                    if run_2
-                    else [run1_metrics[query.query_id][metric]]
+                    metric: [run1_metrics[qid][metric], run2_metrics[qid][metric]]
+                    if run2
+                    else [run1_metrics[qid][metric]]
                     for metric in ["P@1", "P@3", "P@5", "P@10", "nDCG@1", "nDCG@3", "nDCG@5", "nDCG@10"]
                 },
-                "run_1": run_1_for_query,
-                "run_2": run_2_for_query,
-                "summary": self.create_summary(run_1_for_query, run_2_for_query),
-                "mergedWeights": self.merge_weights(run_1_for_query, run_2_for_query),
-            }
-
-        return [qid2object[id] for id in qids]
+                "run1": run1_to_display,
+                "run2": run2_to_display,
+                "doc_ids": list(all_doc_ids_to_display), 
+                "summary": self.create_summary(run1_to_display, run2_to_display),
+                "mergedWeights": self.merge_weights(run1_to_display, run2_to_display),
+            }            
+        return qid2info
 
     def create_summary(self, run1_ranked_docs, run2_ranked_docs):
         summary = []
@@ -265,11 +305,11 @@ class MainTask:
             summary.append(["Number of relative rank reversals: {}".format(swap)])
         return summary
 
-    def merge_weights(self, run1_for_query, run_2_for_query):
+    def merge_weights(self, run1_for_query, run2_for_query):
         doc_id2weights = defaultdict(lambda: {"run1": defaultdict(lambda: []), "run2": defaultdict(lambda: [])})
 
         # If the second run is empty, don't bother to merge
-        if not run_2_for_query:
+        if not run2_for_query:
             merged_weights = defaultdict(lambda: {})
 
             for doc in run1_for_query:
@@ -284,13 +324,13 @@ class MainTask:
 
         for doc in run1_for_query:
             doc_id2weights[doc["doc_id"]]["run1"] = doc["weights"]
-        for doc in run_2_for_query:
+        for doc in run2_for_query:
             doc_id2weights[doc["doc_id"]]["run2"] = doc["weights"]
 
         merged_weights = defaultdict(lambda: {})
         for doc_id in doc_id2weights:
             fields = set(doc_id2weights[doc_id]["run2"].keys()).union(doc_id2weights[doc_id]["run1"])
-            fields = set(fields).difference(set(["doc_id"]))
+            fields = set(fields).difference(set(["doc_id"]))           
             for field in fields:
                 t = IntervalTree()
                 for segment in doc_id2weights[doc_id]["run1"].get(field, []):
@@ -300,25 +340,23 @@ class MainTask:
                 t.split_overlaps()
                 t.merge_equals(lambda old_dict, new_dict: old_dict.update(new_dict) or old_dict, {"run1": None, "run2": None})
                 merged_intervals = sorted([(i.begin, i.end, i.data) for i in t], key=lambda x: (x[0], x[1]))
-                merged_weights[doc_id][field] = merged_intervals
-
+                merged_weights[doc_id][field] = merged_intervals            
         return merged_weights
 
-    def find_snippet(self, weights, doc):
+    def find_snippet(self, weights, default_field=None):
         """
         :param weights: A dict of the form {<field_1>: [(start , end, weight), (start, end, weight), ....], <field_2>: ...}
         Fields are document fields from ir_datasets, for eg: 'text'. 'start' and 'end' are character offsets into the doc
-        :param doc: A large string representing the doc
+        :param default_field: default doc field to display if no matches found.
         :return: A dict {'field': <field_name>, 'start': <start>, 'stop': <end>,  'weights': <weights>}
         """
         MAX_SNIPPET_LEN = 200
-        top_field = None
+        top_field = default_field
         top_snippet_score = -np.inf
         top_range = (-1, -1)
         for field, field_weights in weights.items():
             segments = sorted(field_weights)
             from collections import deque
-
             seg_queues = deque()
             queue_weights = 0
             sidx, eidx = 0, 0
@@ -345,73 +383,67 @@ class MainTask:
             snp_weights = sorted(snp_weights)
             top_snippet = {"field": top_field, "start": start, "stop": stop, "weights": snp_weights}
         else:
-            # fall back onto the first text
-            top_snippet = {"field": doc._fields[1], "start": 0, "stop": MAX_SNIPPET_LEN, "weights": []}
+            #fall back onto the default field
+            top_snippet = {"field": default_field, "start": 0, "stop": MAX_SNIPPET_LEN, "weights": []}
         return top_snippet
 
-    def create_doc_objects(self, query_objects, dataset):
-        """
-        TODO: Need a better name
-        From the given query objects, fetch the used docids from the ir-dataset object
-        :param query_objects: The return type of `create_query_objects()`
-        :param dataset: An instance of irdatasets
+    def retrieve_document_to_display(self, doc_ids_to_display):
+        """        
+        From the given list of document ids, retrieve the doc dictionary storing content
+        :param doc_ids_to_display: list of document ids to display        
         :return: A dict of the form:
         {
-            <doc_id>: {"doc_id": <doc_id>, "text": <content of the doc>, "url": <url>, ... rest from ir-dataset,
+            <doc_id>: {"doc_id": <doc_id>, "text": <content of the doc> ... }
             ...
         }
         """
-        doc_objects = {}
-
-        doc_ids_to_fetch = set()
-        for query_obj in query_objects:
-            run_1 = query_obj["run_1"]
-            run_2 = query_obj["run_2"]
-
-            for listed_doc in run_1 + run_2:
-                doc_ids_to_fetch.add(listed_doc["doc_id"])
-
-        for doc in _logger.pbar(
-            dataset.docs_store().get_many_iter(doc_ids_to_fetch), desc="Docs iter", total=len(doc_ids_to_fetch)
+        docs_to_return = {}
+        for doc_id in _logger.pbar(
+            doc_ids_to_display, desc="Docs iter", total=len(doc_ids_to_display)
         ):
-            doc_objects[doc.doc_id] = doc._asdict()
+            doc = self.doc_lookup_func(doc_id)
+            if not isinstance(doc, dict):
+                #TODO: convert doc object to dictionary
+                doc = doc._asdict()
+            docs_to_return[doc_id] = doc
+        return docs_to_return
 
-        return doc_objects
-
-    def json(self, run_1_fn, run_2_fn=None):
+    def json(self, run1_fn, run2_fn=None):
         """
         Represent the data to be visualized in a json format.
         The format is specified here: https://github.com/capreolus-ir/diffir-private/issues/5
         :params: 2  TREC runs. These dicts of the form {qid: {docid: score}}
         """
-        run_1 = load_trec_run(run_1_fn)
-        run_2 = load_trec_run(run_2_fn) if run_2_fn is not None else None
-
-        dataset = ir_datasets.load(self.dataset)
-        assert dataset.has_docs(), "dataset has no documents; maybe you're missing a partition like '/trec-dl-2020'"
-        assert dataset.has_queries(), "dataset has no queries; maybe you're missing a partition like '/trec-dl-2020'"
-        diff_queries, qid2diff, metric_name, qid2qrelscores = self.measure.query_differences(run_1, run_2, dataset=dataset)
-        # _logger.info(diff_queries)
-        diff_query_objects = self.create_query_objects(
-            run_1, run_2, diff_queries, qid2diff, metric_name, dataset, qid2qrelscores=qid2qrelscores
+        run1 = load_trec_run(run1_fn)
+        run2 = load_trec_run(run2_fn) if run2_fn is not None else None        
+        
+        diff_queries, qid2diff, metric_name, qid2qrelscores = self.measure.query_differences(run1, run2, qrels=self.qrels)
+        
+        qid2querydiff = self.gather_query_differences(
+            run1, run2, diff_queries, qid2diff, metric_name, qid2qrelscores=qid2qrelscores
         )
-        doc_objects = self.create_doc_objects(diff_query_objects, dataset)
+
+        doc_ids_to_fetch = set()
+        for qid in qid2querydiff:        
+            doc_ids_to_fetch.update(qid2querydiff[qid]["doc_ids"])
+
+        doc_objects = self.retrieve_document_to_display(doc_ids_to_fetch)
 
         return json.dumps(
             {
                 "meta": {
-                    "run1_name": run_1_fn,
-                    "run2_name": run_2_fn,
+                    "run1_name": run1_fn,
+                    "run2_name": run2_fn,
                     "dataset": self.dataset,
                     "measure": self.measure.module_name,
                     # "weight": self.weight.module_name,
-                    "qrelDefs": dataset.qrels_defs(),
-                    "queryFields": dataset.queries_cls()._fields,
-                    "specified_qfield":self.qfields if self.qfields else "",
-                    "docFields": dataset.docs_cls()._fields,
-                    "relevanceColors": self.make_rel_colors(dataset),
+                    "qrelDefs": self.qrel_defs,
+                    "queryFields": self.qfields,
+                    "qfield_to_use": self.qfield_to_use,
+                    # "docFields": dataset.docs_cls()._fields,
+                    "relevanceColors": self.make_rel_colors(),
                 },
-                "queries": diff_query_objects,
+                "queries": [qid2querydiff[qid] for qid in qid2querydiff],
                 "docs": doc_objects,
             }
         )
@@ -435,12 +467,12 @@ class MainTask:
 
         return snp_text
 
-    def cli_display_one_query(self, console, q, start_idx, end_idx, docs, run_1_name):
+    def cli_display_one_query(self, console, q, start_idx, end_idx, docs, run1_name):
         docid2rank_run1 = defaultdict(lambda: "Not ranked")
-        for doc in q["run_1"]:
+        for doc in q["run1"]:
             docid2rank_run1[doc["doc_id"]] = doc["rank"]
 
-        table = Table(show_header=True, header_style="bold red", title=run_1_name, show_lines=True, expand=True)
+        table = Table(show_header=True, header_style="bold red", title=run1_name, show_lines=True, expand=True)
         table.add_column("DocID", justify="center", style="cyan", no_wrap=True)
         table.add_column("Ranking", justify="left", style="magenta")
         table.add_column("Rel", justify="center", style="green")
@@ -450,7 +482,7 @@ class MainTask:
             retval = "Unjudged" if rel is None else str(rel)
             return retval
 
-        for run1_doc in q["run_1"][start_idx:end_idx]:
+        for run1_doc in q["run1"][start_idx:end_idx]:
             snippet = self.render_snippet_for_cli(run1_doc["doc_id"], run1_doc["snippet"], docs)
             table.add_row(
                 run1_doc["doc_id"],
@@ -464,11 +496,11 @@ class MainTask:
 
     def cli_compare_one_query(self, console, q, start_idx, end_idx, docs, run1_name, run2_name):
         docid2rank_run1 = defaultdict(lambda: "Not ranked")
-        for doc in q["run_1"]:
+        for doc in q["run1"]:
             docid2rank_run1[doc["doc_id"]] = doc["rank"]
 
         docid2rank_run2 = defaultdict(lambda: "Not ranked")
-        for doc in q["run_2"]:
+        for doc in q["run2"]:
             docid2rank_run2[doc["doc_id"]] = doc["rank"]
 
         self.print_query_to_console(q, console)
@@ -499,7 +531,7 @@ class MainTask:
             else:
                 return str(rel)
 
-        for run1_doc, run2_doc in zip(q["run_1"][start_idx:end_idx], q["run_2"][start_idx:end_idx]):
+        for run1_doc, run2_doc in zip(q["run1"][start_idx:end_idx], q["run2"][start_idx:end_idx]):
             snp_1 = self.render_snippet_for_cli(run1_doc["doc_id"], run1_doc["snippet"], docs)
             snp_2 = self.render_snippet_for_cli(run2_doc["doc_id"], run2_doc["snippet"], docs)
             table.add_row(
@@ -548,9 +580,9 @@ class MainTask:
 
         return template.render(data=json_data)
 
-    def make_rel_colors(self, dataset):
+    def make_rel_colors(self):
         result = {None: "#888888"}
-        if not dataset.has_qrels():
+        if not self.qrel_defs:
             return result
         NON_POS_COLORS = {
             0: [],
@@ -565,14 +597,13 @@ class MainTask:
             3: ["#caab39", "#52b262", "#58aadc"],  # yellow, green, blue
             4: ["#cf752b", "#caab39", "#52b262", "#58aadc"],  # orange, yellow, green, blue
             5: ["#cf752b", "#caab39", "#52b262", "#58aadc", "#8a5fd4"],  # orange, yellow, green, blue, purple
-        }
-        qrel_defs = dataset.qrels_defs()
-        nonpos = sorted([k for k in qrel_defs.keys() if k <= 0])
+        }        
+        nonpos = sorted([k for k in self.qrel_defs.keys() if k <= 0])
         if len(nonpos) in NON_POS_COLORS:
             result.update(zip(nonpos, NON_POS_COLORS[len(nonpos)]))
         else:
             result.update(zip(nonpos, NON_POS_COLORS[3][0] * (len(nonpos) - 3) + NON_POS_COLORS[3]))
-        pos = sorted([k for k in qrel_defs.keys() if k > 0])
+        pos = sorted([k for k in self.qrel_defs.keys() if k > 0])
         if len(pos) in POS_COLORS:
             result.update(zip(pos, POS_COLORS[len(pos)]))
         else:

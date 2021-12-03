@@ -333,7 +333,8 @@
         if (doc.relevance === null) {
           var $rel = $('<h6 class="badge badge-info">Unjudged</h6>').css('background-color', data.meta.relevanceColors['null']);
         } else {
-          var $rel = $('<h6 class="badge badge-info"></h6>').text('Rel: ' + doc.relevance).css('background-color', data.meta.relevanceColors[doc.relevance.toString()]).attr('title', data.meta.qrelDefs[doc.relevance.toString()]).css('cursor', 'help');
+          var qrelDef = data.meta.qrelDefs == null ? doc.relevance.toString() : data.meta.qrelDefs[doc.relevance.toString()];            
+          var $rel = $('<h6 class="badge badge-info"></h6>').text('Rel: ' + doc.relevance).css('background-color', data.meta.relevanceColors[doc.relevance.toString()]).attr('title', qrelDef).css('cursor', 'help');
         }
         var $score = $('<h6 class="badge"></h6>').text('Score: ' + doc.score.toFixed(4));
         var doc_fields = data.docs[doc.doc_id];
@@ -375,7 +376,8 @@
         if (doc.relevance === null) {
           var $rel = $('<h6 class="badge badge-info">Unjudged</h6>').css('background-color', data.meta.relevanceColors['null']);
         } else {
-          var $rel = $('<h6 class="badge badge-info"></h6>').text('Rel: ' + doc.relevance).css('background-color', data.meta.relevanceColors[doc.relevance.toString()]).attr('title', data.meta.qrelDefs[doc.relevance.toString()]).css('cursor', 'help');
+          var qrelDef = data.meta.qrelDefs == null ? doc.relevance.toString() : data.meta.qrelDefs[doc.relevance.toString()];            
+          var $rel = $('<h6 class="badge badge-info"></h6>').text('Rel: ' + doc.relevance).css('background-color', data.meta.relevanceColors[doc.relevance.toString()]).attr('title', qrelDef).css('cursor', 'help');
         }
         var $score = $('<h6 class="badge"></h6>').text('Score: ' + doc.score.toFixed(4));
         var doc_fields = data.docs[doc.doc_id];
@@ -474,7 +476,7 @@
           $metricsTable.append($tbody);
           $("#metrics").empty().append($metricsTable);          
           allWeightsA = {}
-          generateDocListSingleView(query.run_1, "#docList", allWeightsA);
+          generateDocListSingleView(query.run1, "#docList", allWeightsA);
         } else {
           var $metricsTable = $('<table class="styled-table" align="center"></table>')
           $("<thead> <tr> <th>Metric</th> <td>Run1</td> <td>Run2</td></tr></thead>").appendTo($metricsTable);
@@ -488,8 +490,8 @@
           $("#metrics").empty().append($metricsTable);
           allWeightsA = {};
           allWeightsB = {};          
-          generateDocList(query.run_1, query.run_2, '#Run1Docs', 'right', allWeightsA);
-          generateDocList(query.run_2, query.run_1, '#Run2Docs', 'left', allWeightsB);          
+          generateDocList(query.run1, query.run2, '#Run1Docs', 'right', allWeightsA);
+          generateDocList(query.run2, query.run1, '#Run2Docs', 'left', allWeightsB);          
         }
       }
       var extraFields = $("#Query").find("tr").slice(2).attr("class", "query_collapse collapse");
@@ -621,7 +623,7 @@
         $('#Run2Name').text(data.meta.run2_name);
       }
       var $select = $('#Queries');
-      var queryDisplayField = data.meta.specified_qfield;
+      var queryDisplayField = data.meta.qfield_to_use;
       if (queryDisplayField === ""){
       	$.each(data.meta.queryFields, function (i, e) {
         	if (e !== 'query_id') {
