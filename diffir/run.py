@@ -242,6 +242,12 @@ class MainTask:
         return qid2info
 
     def create_summary(self, run1_ranked_docs, run2_ranked_docs):
+        """
+        Given two run files, create a summary of notable differeces between them,
+        :param: run1_ranked_docs: First TREC runs
+        :param: run2_ranked_docs: Second TREc runs
+        Return a list of strings describing the differences.
+        """
         summary = []
         if len(run2_ranked_docs) == 0:
             unjudged_count = 0
@@ -306,6 +312,9 @@ class MainTask:
         return summary
 
     def merge_weights(self, run1_for_query, run2_for_query):
+        """
+        Merge the the weights of documents from two run files 
+        """
         doc_id2weights = defaultdict(lambda: {"run1": defaultdict(lambda: []), "run2": defaultdict(lambda: [])})
 
         # If the second run is empty, don't bother to merge
@@ -449,14 +458,24 @@ class MainTask:
         )
 
     def print_query_to_console(self, q, console):
+        """
+        Print query fields to the console
+        """
         # print query to console using rich
         fields = [f"# [blue][bold]{k}: [white][italic]{v}".replace("\n", " ") for k, v in q["fields"].items()]
         query_text = "\n".join(fields)
         query_panel = Panel(query_text, title="Query # {}".format(q["fields"]["query_id"]), expand=True)
         console.print(query_panel)
 
-    def render_snippet_for_cli(self, doc_id, snp, docs):
+    def render_snippet_for_cli(self, doc_id: str, snp, docs):
+        """
+        Print snippet of a document to the console 
+        :param: doc_id: document id
+        :param: snp: snippet contaiting the document fields, and the weights
+        :param: docs: a dictionary that map document ids to contents
+        """
         snp_text = docs[doc_id][snp["field"]][snp["start"] : snp["stop"]]
+        # Escape special characters 
         snp_text = snp_text.replace("[", "")
         idx_change = 0
         for s, e, w in snp["weights"]:
@@ -467,7 +486,16 @@ class MainTask:
 
         return snp_text
 
-    def cli_display_one_query(self, console, q, start_idx, end_idx, docs, run1_name):
+    def cli_display_one_run(self, console, q, start_idx, end_idx, docs, run1_name):
+        """
+        Visualize a single run
+        :param: console: console object to display
+        :param: q: query to display
+        :param: start_idx: start document index to display
+        :param: end_idx: end document index to display
+        :param: docs: document dictioary maps document id to contents
+        :param: run1_name: name of the the TREC run
+        """
         docid2rank_run1 = defaultdict(lambda: "Not ranked")
         for doc in q["run1"]:
             docid2rank_run1[doc["doc_id"]] = doc["rank"]
@@ -494,7 +522,17 @@ class MainTask:
         self.print_query_to_console(q, console)
         console.print(table)
 
-    def cli_compare_one_query(self, console, q, start_idx, end_idx, docs, run1_name, run2_name):
+    def cli_compare_two_runs(self, console, q, start_idx, end_idx, docs, run1_name, run2_name):
+        """
+        Visualize two runs with the command line interface
+        :param: console: The target console to print
+        :param: q: query to display
+        :param: start_idx: start document index 
+        :param: end_idx: end document index
+        :param: docs: a dictionary that maps document id to document contents
+        :param: run1_name: first TREC run
+        ;param: run2_name: second TREC run 
+        """
         docid2rank_run1 = defaultdict(lambda: "Not ranked")
         for doc in q["run1"]:
             docid2rank_run1[doc["doc_id"]] = doc["rank"]
@@ -552,6 +590,9 @@ class MainTask:
         console.print(table)
 
     def cli(self, runs):
+        """
+        Command line interface
+        """
         json_data = json.loads(self.json(*runs))
         # 1. render the json_data into the terminal
         query_text = ""
@@ -562,7 +603,7 @@ class MainTask:
         console = Console()
         if len(runs) == 2:
             for current_index in range(len(queries)):
-                self.cli_compare_one_query(
+                self.cli_compare_two_runs(
                     console, queries[current_index], 0, None, docs, json_data["meta"]["run1_name"], json_data["meta"]["run2_name"]
                 )
                 ans = Confirm.ask("Want to see the next query?")
@@ -570,9 +611,12 @@ class MainTask:
                     return
         else:
             for current_index in range(len(queries)):
-                self.cli_display_one_query(console, queries[current_index], 0, None, docs, json_data["meta"]["run1_name"])
+                self.cli_display_one_run(console, queries[current_index], 0, None, docs, json_data["meta"]["run1_name"])
 
     def web(self, runs):
+        """
+        Web interface
+        """
         json_data = self.json(*runs)
 
         script_dir = os.path.dirname(__file__)
