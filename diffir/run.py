@@ -26,7 +26,7 @@ def main():
     parser.add_argument("-w", "--web", dest="web", action="store_true", help="output HTML file for WebUI")
     parser.add_argument("--dataset", dest="dataset", type=str, required=True, help="dataset identifier from ir_datasets")
     parser.add_argument(
-        "--measure", dest="measure", type=str, default="qrel", help="measure for ranking difference (qrel, tauap, weightedtau)"
+        "--measure", dest="measure", type=str, default="tauap", help="measure for ranking difference (qrel, tauap, weightedtau)"
     )
     parser.add_argument(
         "--metric", dest="metric", type=str, default="nDCG@10", help="metric to report and used with qrel measure"
