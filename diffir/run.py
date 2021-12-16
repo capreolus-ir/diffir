@@ -34,7 +34,7 @@ def main():
     parser.add_argument("--topk", dest="topk", type=int, default=50, help="number of queries to compare")
     parser.add_argument("--weights_1", dest="weights_1", type=str, default=None, required=False)
     parser.add_argument("--weights_2", dest="weights_2", type=str, default=None, required=False)
-    parser.add_argument("--qfield_to_use", dest="qfield", type=str, default="", required=False, help="Query field for exact matching")
+    parser.add_argument("--qfield", dest="qfield", type=str, default="", required=False, help="Query field for exact matching")
     args = parser.parse_args()
     config = {
         "dataset": args.dataset,
