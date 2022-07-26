@@ -32,6 +32,7 @@ def main():
         "--metric", dest="metric", type=str, default="nDCG@10", help="metric to report and used with qrel measure"
     )
     parser.add_argument("--topk", dest="topk", type=int, default=50, help="number of queries to compare")
+    parser.add_argument("--result_count", dest="result_count", type=int, default=10, help="number of documents to compare for each query")
     parser.add_argument("--weights_1", dest="weights_1", type=str, default=None, required=False)
     parser.add_argument("--weights_2", dest="weights_2", type=str, default=None, required=False)
     args = parser.parse_args()
@@ -41,6 +42,7 @@ def main():
         "metric": args.metric,
         "topk": args.topk,
         "weight": {"weights_1": args.weights_1, "weights_2": args.weights_2},
+        "result_count": args.result_count,
     }
     if not (args.cli or args.web):
         args.cli = True  # default
@@ -69,7 +71,7 @@ class MainTask:
     module_type = "task"
     module_name = "main"
 
-    def __init__(self, dataset="none", queries="none", measure="topk", metric="weighted_tau", topk=3, weight={}):
+    def __init__(self, dataset="none", queries="none", measure="topk", metric="weighted_tau", topk=3, weight={}, result_count=10):
         self.dataset = dataset
         self.queries = queries
         if measure == "qrel":
@@ -80,11 +82,12 @@ class MainTask:
             raise ValueError("Measure {} is not supported".format(measure))
 
         self.weight = WeightBuilder(weight["weights_1"], weight["weights_2"])
+        self.result_count = result_count
 
     def compute_qrel_metrics(self):
         pass
 
-    def create_query_objects(self, run_1, run_2, qids, qid2diff, metric_name, dataset, qid2qrelscores=None):
+    def create_query_objects(self, run_1, run_2, qids, qid2diff, metric_name, dataset, qid2qrelscores=None, result_count=10):
         """
         TODO: Need a better name
         This method takes in 2 runs and a set of qids, and constructs a dict for each qid (format specified below)
@@ -126,11 +129,10 @@ class MainTask:
             if query.query_id not in qids_set:
                 continue
 
-            RESULT_COUNT = 10
             doc_ids = (
-                set(list(run_1[query.query_id])[:RESULT_COUNT] + list(run_2[query.query_id])[:RESULT_COUNT])
+                set(list(run_1[query.query_id])[:result_count] + list(run_2[query.query_id])[:result_count])
                 if run_2
-                else list(run_1[query.query_id])[:RESULT_COUNT]
+                else list(run_1[query.query_id])[:result_count]
             )
 
             fields = query._asdict()
@@ -383,7 +385,7 @@ class MainTask:
         diff_queries, qid2diff, metric_name, qid2qrelscores = self.measure.query_differences(run_1, run_2, dataset=dataset)
         # _logger.info(diff_queries)
         diff_query_objects = self.create_query_objects(
-            run_1, run_2, diff_queries, qid2diff, metric_name, dataset, qid2qrelscores=qid2qrelscores
+            run_1, run_2, diff_queries, qid2diff, metric_name, dataset, qid2qrelscores=qid2qrelscores, result_count=self.result_count
         )
         doc_objects = self.create_doc_objects(diff_query_objects, dataset)
 
