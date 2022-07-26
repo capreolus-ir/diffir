@@ -74,7 +74,7 @@ class MainTask:
         self.queries = queries
         if measure == "qrel":
             self.measure = QrelMeasure(metric, topk)
-        elif measure in ["tauap", "weightedtau", "spearmanr", "pearsonrank", "kldiv"]:
+        elif measure in ["tauap", "weightedtau", "spearmanr", "pearsonrank", "kldiv", "rbo"]:
             self.measure = TopkMeasure(measure, topk)
         else:
             raise ValueError("Measure {} is not supported".format(measure))
