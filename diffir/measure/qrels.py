@@ -36,7 +36,7 @@ class QrelMeasure(Measure):
         eval_run_1 = self.convert_to_nested_dict(iter_calc([metric], qrels, run1))
         query_ids = sorted(query_ids, key=lambda x: eval_run_1[x][metric])
         query_ids = query_ids[:topk]
-        id2diff = {x: eval_run_1[0][metric] for x in query_ids}
+        id2diff = {x: eval_run_1[x][metric] for x in query_ids}
         id2qrelscores = {x: [eval_run_1[x][metric], 0] for x in query_ids}
         return query_ids, id2diff, self.metric, id2qrelscores
 
