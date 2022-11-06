@@ -333,7 +333,8 @@
         if (doc.relevance === null) {
           var $rel = $('<h6 class="badge badge-info">Unjudged</h6>').css('background-color', data.meta.relevanceColors['null']);
         } else {
-          var $rel = $('<h6 class="badge badge-info"></h6>').text('Rel: ' + doc.relevance).css('background-color', data.meta.relevanceColors[doc.relevance.toString()]).attr('title', data.meta.qrelDefs[doc.relevance.toString()]).css('cursor', 'help');
+          var qrelDef = data.meta.qrelDefs == null ? doc.relevance.toString() : data.meta.qrelDefs[doc.relevance.toString()];            
+          var $rel = $('<h6 class="badge badge-info"></h6>').text('Rel: ' + doc.relevance).css('background-color', data.meta.relevanceColors[doc.relevance.toString()]).attr('title', qrelDef).css('cursor', 'help');
         }
         var $score = $('<h6 class="badge"></h6>').text('Score: ' + doc.score.toFixed(4));
         var doc_fields = data.docs[doc.doc_id];
@@ -345,8 +346,8 @@
           $text.prepend('...');
         }
         $text.prepend($('<span style="color: #999;"></span>').text(doc.snippet.field + ': '));
-        var newEl = $('<div></div>')
-          .append($('<div class="card"></div>')
+        var newEl = $('<div class="card" style="width:100%"></div>')
+          //.append($('<div class="card"></div>')
             .attr('data-docid', doc.doc_id)
             .attr('run1-rank', doc.rank)
             .append($('<div class="card-header"></div>')
@@ -359,8 +360,7 @@
               .append(' ')
               .append($score)
               .append($('<div class="snippet"></div>').append($text))
-            )
-          )
+            )          
           .appendTo(container);
       });
     }
@@ -376,7 +376,8 @@
         if (doc.relevance === null) {
           var $rel = $('<h6 class="badge badge-info">Unjudged</h6>').css('background-color', data.meta.relevanceColors['null']);
         } else {
-          var $rel = $('<h6 class="badge badge-info"></h6>').text('Rel: ' + doc.relevance).css('background-color', data.meta.relevanceColors[doc.relevance.toString()]).attr('title', data.meta.qrelDefs[doc.relevance.toString()]).css('cursor', 'help');
+          var qrelDef = data.meta.qrelDefs == null ? doc.relevance.toString() : data.meta.qrelDefs[doc.relevance.toString()];            
+          var $rel = $('<h6 class="badge badge-info"></h6>').text('Rel: ' + doc.relevance).css('background-color', data.meta.relevanceColors[doc.relevance.toString()]).attr('title', qrelDef).css('cursor', 'help');
         }
         var $score = $('<h6 class="badge"></h6>').text('Score: ' + doc.score.toFixed(4));
         var doc_fields = data.docs[doc.doc_id];
@@ -475,7 +476,7 @@
           $metricsTable.append($tbody);
           $("#metrics").empty().append($metricsTable);          
           allWeightsA = {}
-          generateDocListSingleView(query.run_1, "#docList", allWeightsA);
+          generateDocListSingleView(query.run1, "#docList", allWeightsA);
         } else {
           var $metricsTable = $('<table class="styled-table" align="center"></table>')
           $("<thead> <tr> <th>Metric</th> <td>Run1</td> <td>Run2</td></tr></thead>").appendTo($metricsTable);
@@ -489,8 +490,8 @@
           $("#metrics").empty().append($metricsTable);
           allWeightsA = {};
           allWeightsB = {};          
-          generateDocList(query.run_1, query.run_2, '#Run1Docs', 'right', allWeightsA);
-          generateDocList(query.run_2, query.run_1, '#Run2Docs', 'left', allWeightsB);          
+          generateDocList(query.run1, query.run2, '#Run1Docs', 'right', allWeightsA);
+          generateDocList(query.run2, query.run1, '#Run2Docs', 'left', allWeightsB);          
         }
       }
       var extraFields = $("#Query").find("tr").slice(2).attr("class", "query_collapse collapse");
@@ -622,13 +623,15 @@
         $('#Run2Name').text(data.meta.run2_name);
       }
       var $select = $('#Queries');
-      var queryDisplayField = null;
-      $.each(data.meta.queryFields, function (i, e) {
-        if (e !== 'query_id') {
-          queryDisplayField = e;
-          return false; // break
-        }
-      });
+      var queryDisplayField = data.meta.qfield_to_use;
+      if (queryDisplayField === ""){
+      	$.each(data.meta.queryFields, function (i, e) {
+        	if (e !== 'query_id') {
+          	queryDisplayField = e;
+          	return false; // break
+        	}
+      	});
+      }
       $.each(data.queries, function (_, query) {
         if (!singleRunView){
           $('<option>').attr('value', query['fields']['query_id']).attr("data-tokens", query.fields.query_id + " " + query.fields[queryDisplayField]).attr('data-subtext', query.fields.contrast.name+': '+query.fields.contrast.value.toFixed(3)).text(query.fields[queryDisplayField]).appendTo($select);
